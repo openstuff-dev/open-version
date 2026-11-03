@@ -238,11 +238,11 @@ export class IntegrationsTab {
     this.testing.set(true);
     this.testResult.set(null);
     try {
-      await this.api.post(`${this.base}/integrations/${current.id}/test`, {
+      const result = await this.api.post<{ message: string }>(`${this.base}/integrations/${current.id}/test`, {
         url: this.url,
         ...(this.publishKey ? { publishKey: this.publishKey } : {}),
       });
-      this.testResult.set({ ok: true, text: 'OpenAnnounce accepted the key.' });
+      this.testResult.set({ ok: true, text: result.message });
     } catch (error) {
       this.testResult.set({ ok: false, text: errorText(error) });
     } finally {

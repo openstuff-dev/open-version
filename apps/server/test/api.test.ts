@@ -12,9 +12,14 @@ import type {
   TeamExport,
   VersionInfo,
 } from '@open-version/contracts';
+import http from 'node:http';
+import type { AddressInfo } from 'node:net';
 import { buildApp } from '../src/app.js';
 import { hashPassword } from '../src/auth.js';
 import { loadConfig } from '../src/config.js';
+import { vaultFor } from '../src/crypto.js';
+import { postToOpenAnnounce } from '../src/openannounce.js';
+import { MAX_ATTEMPTS, sendOutbox } from '../src/worker.js';
 import { createPool, migrate, type Pool, withScope } from '../src/db.js';
 import {
   DEMO_ADMIN,
@@ -28,6 +33,7 @@ import {
 // TEST_DATABASE_URL=postgres://openversion:openversion@localhost:5434/openversion_test
 // The database is emptied first.
 const url = process.env.TEST_DATABASE_URL ?? '';
+const vault = vaultFor('test-secret-key');
 
 function must<T>(value: T | null | undefined, what = 'value'): T {
   if (value === null || value === undefined) throw new Error(`Expected a ${what}.`);
@@ -84,8 +90,11 @@ describe.skipIf(!url)('API against Postgres', () => {
     await migrate(url, fileURLToPath(new URL('../migrations', import.meta.url)));
     pool = createPool(url);
     app = await buildApp({ ...loadConfig({}), databaseUrl: url, logLevel: 'silent', versionRateLimit: 1000 }, pool, {
+      vault: () => Promise.resolve(vault),
       testConnection: (target, key) =>
-        key === 'ak_good_key' ? Promise.resolve() : Promise.reject(new Error(`${target} refused the key.`)),
+        key === 'ak_good_key'
+          ? Promise.resolve('Connected.')
+          : Promise.reject(new Error(`${target} refused the key.`)),
     });
     await pool.query(
       `INSERT INTO accounts (email, name, password_hash, is_server_admin) VALUES ('root@example.com', 'Root', $1, true)`,
@@ -397,6 +406,110 @@ describe.skipIf(!url)('API against Postgres', () => {
       expect(published.statusCode).toBe(201);
       const env = await environment(admin, 'shop', 'production');
       expect(must(env.live).deliveries).toMatchObject([{ kind: 'open-announce', status: 'pending', attempts: 0 }]);
+    });
+  });
+
+  describe('posting release notes to OpenAnnounce', () => {
+    // A fake OpenAnnounce: it posts once per Idempotency-Key, like the real one.
+    const posts = new Map<string, { title: string; body: string; groups?: string[] }>();
+    let requests = 0;
+    let answer = 201;
+    let fake: http.Server;
+    let fakeUrl = '';
+    const PRIVATE = { mode: 'private', allow: [] } as const;
+    type Post = Parameters<typeof postToOpenAnnounce>[3];
+    const poster = (target: string, key: string, release: Post) =>
+      postToOpenAnnounce(PRIVATE, target, key, release);
+    let backOffice: DemoKeys;
+
+    beforeAll(async () => {
+      fake = http.createServer((req, res) => {
+        let raw = '';
+        req.on('data', (c: Buffer) => (raw += c.toString()));
+        req.on('end', () => {
+          requests++;
+          if (req.headers.authorization !== 'Bearer ak_fake_publish_key_123') {
+            res.writeHead(401).end(JSON.stringify({ error: 'That publish key isn’t valid.' }));
+            return;
+          }
+          if (answer !== 201) {
+            res.writeHead(answer).end(JSON.stringify({ error: `Fake error ${answer}` }));
+            return;
+          }
+          const key = String(req.headers['idempotency-key']);
+          const replay = posts.has(key);
+          if (!replay) posts.set(key, JSON.parse(raw) as { title: string; body: string });
+          res.writeHead(replay ? 200 : 201, { 'content-type': 'application/json' }).end('{}');
+        });
+      });
+      await new Promise<void>((resolve) => fake.listen(0, '127.0.0.1', resolve));
+      fakeUrl = `http://127.0.0.1:${(fake.address() as AddressInfo).port}`;
+      backOffice = must(keys.find((k) => k.app === 'back-office'), 'back office');
+      const env = await environment(admin, 'back-office', 'production');
+      const created = await inject(admin, 'POST', `/api/t/demo/environments/${env.id}/integrations`, {
+        url: fakeUrl,
+        publishKey: 'ak_fake_publish_key_123',
+        groups: ['warehouse'],
+      });
+      expect(created.statusCode).toBe(201);
+    });
+
+    afterAll(() => {
+      fake.close();
+    });
+
+    const deliveries = async () => {
+      const env = await environment(admin, 'back-office', 'production');
+      const history = (await inject(admin, 'GET', `/api/t/demo/environments/${env.id}/releases`)).json<Release[]>();
+      return history[0];
+    };
+
+    it('posts "{App} {version}" with the notes once, even when the post is retried', async () => {
+      const published = await ci(backOffice.deployToken, 'POST', '/api/v1/releases', { version: '1.0.0', notes: '- Barcode scanning' });
+      expect(published.statusCode).toBe(201);
+      expect(await sendOutbox(pool, vault, poster)).toBe(1);
+      expect([...posts.values()]).toEqual([{ title: 'Back office 1.0.0', body: '- Barcode scanning', groups: ['warehouse'] }]);
+      expect((await deliveries()).deliveries).toMatchObject([{ status: 'sent', attempts: 1, lastError: null }]);
+      // Nothing left to send; a forced resend (the worker died after posting) reuses the key.
+      expect(await sendOutbox(pool, vault, poster)).toBe(0);
+      await withScope(pool, { bypass: true }, (db) => db.query(`UPDATE outbox SET status = 'pending', next_attempt_at = now()`));
+      await sendOutbox(pool, vault, poster);
+      expect(posts.size).toBe(1);
+    });
+
+    it('backs off on server errors and gives up after the last try, with the reason', async () => {
+      answer = 503;
+      await ci(backOffice.deployToken, 'POST', '/api/v1/releases', { version: '1.1.0', notes: 'Faster' });
+      const before = requests;
+      for (let i = 0; i < MAX_ATTEMPTS; i++) {
+        await withScope(pool, { bypass: true }, (db) =>
+          db.query(`UPDATE outbox SET next_attempt_at = now() WHERE status = 'pending'`),
+        );
+        await sendOutbox(pool, vault, poster);
+        const latest = must((await deliveries()).deliveries[0]);
+        expect(latest.attempts).toBe(i + 1);
+        expect(latest.status).toBe(i + 1 < MAX_ATTEMPTS ? 'pending' : 'failed');
+      }
+      expect(requests - before).toBe(MAX_ATTEMPTS);
+      expect((await deliveries()).deliveries[0].lastError).toContain('Fake error 503');
+    });
+
+    it('stops at once when the key is refused, and Retry starts over', async () => {
+      answer = 201;
+      const env = await environment(admin, 'back-office', 'production');
+      const [integration] = (await inject(admin, 'GET', `/api/t/demo/environments/${env.id}/integrations`)).json<{ id: string }[]>();
+      await inject(admin, 'PATCH', `/api/t/demo/integrations/${integration.id}`, { publishKey: 'ak_wrong_key_0000000' });
+      await ci(backOffice.deployToken, 'POST', '/api/v1/releases', { version: '1.2.0', notes: 'X' });
+      await sendOutbox(pool, vault, poster);
+      const refused = await deliveries();
+      expect(refused.deliveries[0]).toMatchObject({ status: 'failed', attempts: 1 });
+      expect(refused.deliveries[0].lastError).toContain('refused the publish key');
+      await inject(admin, 'PATCH', `/api/t/demo/integrations/${integration.id}`, { publishKey: 'ak_fake_publish_key_123' });
+      const retry = await inject(developer, 'POST', `/api/t/demo/releases/${refused.id}/deliveries/${integration.id}/retry`);
+      expect(retry.statusCode).toBe(200);
+      await sendOutbox(pool, vault, poster);
+      expect((await deliveries()).deliveries[0]).toMatchObject({ status: 'sent' });
+      expect([...posts.values()].map((p) => p.title)).toContain('Back office 1.2.0');
     });
   });
 

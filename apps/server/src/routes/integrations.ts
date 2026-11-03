@@ -22,7 +22,8 @@ const groups = z
   .transform((list) => [...new Set(list)]);
 const publishKey = z.string().trim().min(8, 'Paste the whole publish key.').max(500);
 
-export type TestConnection = (url: string, key: string) => Promise<void>;
+/** Checks a URL and key against the other system; answers what it found. */
+export type TestConnection = (url: string, key: string) => Promise<string>;
 
 /** Integrations hold another system's key, so only admins manage them. Everyone sees them. */
 export function registerIntegrationRoutes(
@@ -114,7 +115,7 @@ export function registerIntegrationRoutes(
    * Checks the URL and key against the other system now. Takes a URL and key from the form, or
    * uses the saved ones, so people can test before they save.
    */
-  app.post('/api/t/:team/integrations/:id/test', async (request): Promise<{ ok: true }> => {
+  app.post('/api/t/:team/integrations/:id/test', async (request): Promise<{ message: string }> => {
     const { team, id } = idParam.parse(request.params);
     const { teamId } = await teamAccess(pool, request, team, ['admin']);
     const body = z
@@ -131,10 +132,9 @@ export function registerIntegrationRoutes(
     const key = body.publishKey ?? (saved.sealed ? (await vault()).open(saved.sealed) : null);
     if (!key) throw new HttpError(400, 'Enter the OpenAnnounce publish key first.');
     try {
-      await testConnection(body.url ?? saved.url, key);
+      return { message: await testConnection(body.url ?? saved.url, key) };
     } catch (err) {
       throw new HttpError(400, (err as Error).message);
     }
-    return { ok: true };
   });
 }

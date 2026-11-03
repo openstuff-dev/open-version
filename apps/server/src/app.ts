@@ -9,6 +9,8 @@ import type { Config } from './config.js';
 import { loadVault, type Vault } from './crypto.js';
 import type { Pool } from './db.js';
 import { registerErrorHandler } from './errors.js';
+import { testOpenAnnounce } from './openannounce.js';
+import { policyFrom } from './safe-fetch.js';
 import { registerIdempotency } from './idempotency.js';
 import { registerAppRoutes } from './routes/apps.js';
 import { registerDemo } from './routes/demo.js';
@@ -21,6 +23,8 @@ import { registerV1Routes } from './routes/v1.js';
 export interface AppOptions {
   /** Checks an OpenAnnounce URL and publish key. Tests pass a fake. */
   testConnection?: TestConnection;
+  /** The vault for integration keys; made from the config on first use when left out. */
+  vault?: () => Promise<Vault>;
 }
 
 export async function buildApp(
@@ -58,7 +62,7 @@ export async function buildApp(
 
   // The vault reads the database on first use, so building the app needs no query.
   let vault: Promise<Vault> | undefined;
-  const getVault = () => (vault ??= loadVault(pool, config, app.log));
+  const getVault = options.vault ?? (() => (vault ??= loadVault(pool, config, app.log)));
 
   registerAuth(app, pool, config);
   registerIdempotency(app, pool);
@@ -69,8 +73,7 @@ export async function buildApp(
     app,
     pool,
     getVault,
-    options.testConnection ??
-    (() => Promise.reject(new Error('Testing the connection isn’t available yet.'))),
+    options.testConnection ?? ((url, key) => testOpenAnnounce(policyFrom(config), url, key)),
   );
   registerTransferRoutes(app, pool);
   registerV1Routes(app, pool, config);
