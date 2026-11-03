@@ -286,6 +286,14 @@ describe.skipIf(!url)('API against Postgres', () => {
       expect(page.body).toContain('Returns from the account page');
     });
 
+    it('serves the browser package at /sdk/, but not the CLI', async () => {
+      const element = await inject(null, 'GET', '/sdk/update/index.js');
+      expect(element.statusCode).toBe(200);
+      expect(element.headers['access-control-allow-origin']).toBe('*');
+      expect(element.body).toContain('ov-update');
+      expect((await inject(null, 'GET', '/sdk/cli/index.js')).statusCode).toBe(404);
+    });
+
     it('documents /api/v1 in OpenAPI', async () => {
       const doc = (await inject(null, 'GET', '/api/v1/openapi.json')).json<{ paths: Record<string, unknown> }>();
       expect(Object.keys(doc.paths).sort()).toEqual(['/api/v1/refresh', '/api/v1/releases', '/api/v1/releases/live', '/api/v1/version']);

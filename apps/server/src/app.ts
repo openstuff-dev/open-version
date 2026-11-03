@@ -1,6 +1,8 @@
 import fastifyCookie from '@fastify/cookie';
 import fastifyStatic from '@fastify/static';
 import fastifySwagger from '@fastify/swagger';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { registerAuth } from './auth.js';
 import type { Config } from './config.js';
@@ -71,6 +73,20 @@ export async function buildApp(
   );
   registerTransferRoutes(app, pool);
   registerV1Routes(app, pool, config);
+  // The built @openstuff-dev/version, so an app can load it from here instead of npm:
+  // an import map points "@openstuff-dev/version" at /sdk/core/index.js.
+  await app.register(fastifyStatic, {
+    root: sdkDir(),
+    prefix: '/sdk/',
+    decorateReply: false,
+    // Short, so a new server version reaches apps soon; the ETag makes rechecks cheap.
+    maxAge: '5m',
+    allowedPath: (pathName) =>
+      !pathName.includes('/cli/') && (pathName.endsWith('.js') || pathName.endsWith('.js.map')),
+    setHeaders: (reply) => {
+      void reply.header('Access-Control-Allow-Origin', '*');
+    },
+  });
 
   if (config.webDir) {
     await app.register(fastifyStatic, { root: config.webDir, wildcard: false });
@@ -85,4 +101,10 @@ export async function buildApp(
   }
 
   return app;
+}
+
+/** The dist folder of the installed @openstuff-dev/version. */
+function sdkDir(): string {
+  const entry = fileURLToPath(import.meta.resolve('@openstuff-dev/version'));
+  return path.resolve(path.dirname(entry), '..');
 }

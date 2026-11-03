@@ -93,13 +93,15 @@ export function bump(version: string, part: Bump): string {
   const pre = v.prerelease.length > 0;
   let next: Version;
   if (part === 'major') {
-    next = pre && v.minor === 0 && v.patch === 0
-      ? { ...v, prerelease: [], build: [] }
-      : { major: v.major + 1, minor: 0, patch: 0, prerelease: [], build: [] };
+    next =
+      pre && v.minor === 0 && v.patch === 0
+        ? { ...v, prerelease: [], build: [] }
+        : { major: v.major + 1, minor: 0, patch: 0, prerelease: [], build: [] };
   } else if (part === 'minor') {
-    next = pre && v.patch === 0
-      ? { ...v, prerelease: [], build: [] }
-      : { major: v.major, minor: v.minor + 1, patch: 0, prerelease: [], build: [] };
+    next =
+      pre && v.patch === 0
+        ? { ...v, prerelease: [], build: [] }
+        : { major: v.major, minor: v.minor + 1, patch: 0, prerelease: [], build: [] };
   } else {
     next = pre
       ? { ...v, prerelease: [], build: [] }

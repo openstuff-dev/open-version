@@ -17,7 +17,8 @@
     "@fastify/cookie": "^11.1.5",
     "@fastify/swagger": "^9.5.2",
     "pg": "^8.23.1",
-    "zod": "^4.6.6"
+    "zod": "^4.6.6",
+    "@openstuff-dev/version": "*"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",

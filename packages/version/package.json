@@ -7,6 +7,10 @@
     ".": {
       "types": "./dist/core/index.d.ts",
       "import": "./dist/core/index.js"
+    },
+    "./update": {
+      "types": "./dist/update/index.d.ts",
+      "import": "./dist/update/index.js"
     }
   },
   "files": [
@@ -14,13 +18,15 @@
     "!**/*.tsbuildinfo"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json && node -e \"require('fs').chmodSync('dist/cli/index.js', 0o755)\"",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {
     "typescript": "~6.0.3",
-    "vitest": "^5.0.1"
+    "vitest": "^5.0.1",
+    "@types/node": "^24.0.0",
+    "happy-dom": "^20.0.0"
   },
   "publishConfig": {
     "access": "public"
@@ -55,5 +61,12 @@
         ]
       }
     }
-  }
+  },
+  "bin": {
+    "openversion": "./dist/cli/index.js"
+  },
+  "sideEffects": [
+    "./dist/update/*",
+    "./dist/cli/*"
+  ]
 }
