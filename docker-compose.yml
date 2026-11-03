@@ -1,8 +1,47 @@
 services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: openversion
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-openversion}
+      POSTGRES_DB: openversion
+    volumes:
+      - openversion-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U openversion']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
   app:
     build: .
+    depends_on:
+      db:
+        condition: service_healthy
     environment:
+      DATABASE_URL: postgres://openversion:${POSTGRES_PASSWORD:-openversion}@db:5432/openversion
       LOG_LEVEL: ${LOG_LEVEL:-info}
+      # Where people and open tabs reach OpenVersion: setup snippets and notes links use it.
+      OPENVERSION_PUBLIC_URL: ${OPENVERSION_PUBLIC_URL:-http://localhost:8080}
+      # The first admin. Without a password, one is made and shown once in the log.
+      OPENVERSION_ADMIN_EMAIL: ${OPENVERSION_ADMIN_EMAIL:-admin@example.com}
+      OPENVERSION_ADMIN_PASSWORD: ${OPENVERSION_ADMIN_PASSWORD:-}
+      OPENVERSION_SESSION_DAYS: ${OPENVERSION_SESSION_DAYS:-30}
+      # Encrypts integration keys at rest. Set it on a server. See the README.
+      OPENVERSION_SECRET_KEY: ${OPENVERSION_SECRET_KEY:-}
+      # Integrations may reach internal addresses only with private. See the README.
+      OPENVERSION_FETCH: ${OPENVERSION_FETCH:-public}
+      OPENVERSION_FETCH_ALLOW: ${OPENVERSION_FETCH_ALLOW:-}
+      # Version checks per public key and address per minute; 0 turns the limit off.
+      OPENVERSION_VERSION_RATE_LIMIT: ${OPENVERSION_VERSION_RATE_LIMIT:-1200}
+      # Behind a reverse proxy: true, or the proxy's addresses. See the README.
+      OPENVERSION_TRUST_PROXY: ${OPENVERSION_TRUST_PROXY:-}
+      # A pretend app at /demo that runs the client, for trying it out.
+      OPENVERSION_DEMO: ${OPENVERSION_DEMO:-off}
     ports:
       - '${PORT:-8080}:8080'
     restart: unless-stopped
+
+volumes:
+  openversion-db:
