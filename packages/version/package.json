@@ -63,7 +63,7 @@
     }
   },
   "bin": {
-    "openversion": "./dist/cli/index.js"
+    "openversion": "dist/cli/index.js"
   },
   "sideEffects": [
     "./dist/update/*",
