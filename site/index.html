@@ -1,0 +1,914 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>OpenVersion: Tell open tabs a new version is live</title>
+    <meta
+      name="description"
+      content="OpenVersion tells open browser tabs when a new version of your web app is live: a toast to reload, or a safe automatic reload for hard releases. Publish from CI, roll back from the dashboard. Open source and self-hostable."
+    />
+    <meta name="color-scheme" content="dark light" />
+    <link rel="canonical" href="https://version.openstuff.dev/" />
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="OpenVersion" />
+    <meta property="og:title" content="OpenVersion: Tell open tabs a new version is live" />
+    <meta property="og:description" content="Stop stale tabs: tell every open tab when a new version is live. Open source, MIT, self-hostable." />
+    <meta property="og:url" content="https://version.openstuff.dev/" />
+    <meta property="og:image" content="https://version.openstuff.dev/assets/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="OpenVersion: Tell open tabs a new version is live" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link
+      rel="preload"
+      href="assets/os/fonts/Geist-Variable.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link rel="stylesheet" href="assets/site.css" />
+    <script type="module" src="assets/site.js"></script>
+  </head>
+  <body class="os-site">
+    <svg width="0" height="0" style="position: absolute" aria-hidden="true" focusable="false">
+      <symbol id="i-check" viewBox="0 0 16 16">
+        <path
+          d="M3.5 8.5l3 3 6-7"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.6"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </symbol>
+      <symbol id="i-x" viewBox="0 0 16 16">
+        <path
+          d="M4.5 4.5l7 7m0-7l-7 7"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.6"
+          stroke-linecap="round"
+        />
+      </symbol>
+      <symbol id="i-dash" viewBox="0 0 16 16">
+        <path
+          d="M4 8h8"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.6"
+          stroke-linecap="round"
+        />
+      </symbol>
+      <symbol id="i-copy" viewBox="0 0 16 16">
+        <g fill="none" stroke="currentColor" stroke-width="1.4">
+          <rect x="5.5" y="5.5" width="8" height="8" rx="1.5" />
+          <path
+            d="M10.5 3.5v-.5a1.5 1.5 0 0 0-1.5-1.5H4A1.5 1.5 0 0 0 2.5 3v5A1.5 1.5 0 0 0 4 9.5h.5"
+          />
+        </g>
+      </symbol>
+      <symbol id="i-github" viewBox="0 0 16 16">
+        <path
+          fill="currentColor"
+          d="M8 .2a8 8 0 0 0-2.53 15.59c.4.07.55-.17.55-.38v-1.33c-2.23.48-2.7-1.07-2.7-1.07-.36-.92-.89-1.17-.89-1.17-.73-.5.05-.49.05-.49.8.06 1.23.83 1.23.83.72 1.22 1.87.87 2.33.66.07-.52.28-.87.5-1.07-1.78-.2-3.65-.89-3.65-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.6 7.6 0 0 1 4 0c1.53-1.03 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.28.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48v2.2c0 .21.15.46.55.38A8 8 0 0 0 8 .2z"
+        />
+      </symbol>
+      <symbol id="i-arrow" viewBox="0 0 16 16">
+        <path
+          d="M3 8h10m-4-4 4 4-4 4"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.6"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </symbol>
+      <symbol id="i-menu" viewBox="0 0 16 16">
+        <path
+          d="M2.5 4.5h11m-11 4h11m-11 4h11"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+          stroke-linecap="round"
+        />
+      </symbol>
+      <symbol id="i-warn" viewBox="0 0 16 16">
+        <g fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round">
+          <path d="M8 2 14.5 13.5h-13z" />
+          <path d="M8 6.5v3" stroke-linecap="round" />
+        </g>
+        <circle cx="8" cy="11.6" r=".8" fill="currentColor" />
+      </symbol>
+      <symbol id="i-layers" viewBox="0 0 20 20">
+        <g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round">
+          <path d="M10 2.5 17.5 6.5 10 10.5 2.5 6.5z" />
+          <path d="m2.5 10 7.5 4 7.5-4M2.5 13.5l7.5 4 7.5-4" />
+        </g>
+      </symbol>
+      <symbol id="i-building" viewBox="0 0 20 20">
+        <g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round">
+          <rect x="3.5" y="2.5" width="9" height="15" rx="1" />
+          <path d="M12.5 7.5h3a1 1 0 0 1 1 1v9h-4M6.5 6h3M6.5 9h3M6.5 12h3" />
+        </g>
+      </symbol>
+      <symbol id="i-shield" viewBox="0 0 20 20">
+        <g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round">
+          <path d="M10 2.5 16 5v5c0 3.6-2.5 6.3-6 7.5C6.5 16.3 4 13.6 4 10V5z" />
+          <path d="m7.5 10 2 2 3.5-4" stroke-linecap="round" />
+        </g>
+      </symbol>
+      <symbol id="i-users" viewBox="0 0 20 20">
+        <g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+          <circle cx="7.5" cy="7" r="3" />
+          <path d="M2.5 16.5c.6-2.6 2.6-4 5-4s4.4 1.4 5 4" />
+          <path d="M13 4.3a3 3 0 0 1 0 5.4M14.5 12.8c1.4.5 2.5 1.8 3 3.7" />
+        </g>
+      </symbol>
+      <symbol id="i-key" viewBox="0 0 20 20">
+        <g
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <circle cx="6.5" cy="13.5" r="3.5" />
+          <path d="m9 11 7.5-7.5M14 6l2 2M12 8l1.5 1.5" />
+        </g>
+      </symbol>
+      <symbol id="i-swap" viewBox="0 0 20 20">
+        <g
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M4 7h12m-3-3 3 3-3 3M16 13H4m3-3-3 3 3 3" />
+        </g>
+      </symbol>
+    </svg>
+
+    <a class="os-skip-link" href="#main">Skip to content</a>
+
+    <!-- 1. Top bar -->
+    <header class="os-topbar">
+      <div class="os-wrap">
+        <a class="os-brand" href="./" aria-label="OpenVersion home">
+          <svg class="os-mark" aria-hidden="true">
+            <use href="assets/logo.svg#mark-open-version" />
+          </svg>
+          <span class="os-wordmark" aria-hidden="true">Open<b>Version</b></span>
+        </a>
+        <nav class="os-nav" aria-label="Main">
+          <a href="#features">Features</a>
+          <a href="#how">How it works</a>
+          <a href="#self-host">Self-host</a>
+          <a href="https://github.com/openstuff-dev/open-version">GitHub</a>
+        </nav>
+        <div class="os-topbar-actions">
+          <a
+            class="os-button"
+            data-variant="ghost"
+            data-hide-sm
+            href="https://version.openstuff.app/sign-in"
+            >Sign in</a
+          >
+          <a class="os-button" data-variant="primary" href="#self-host">Self-host it</a>
+          <button
+            class="os-button os-menu-button"
+            data-variant="ghost"
+            data-icon-only
+            popovertarget="os-menu"
+            aria-label="Open menu"
+          >
+            <svg class="os-icon" aria-hidden="true"><use href="#i-menu" /></svg>
+          </button>
+        </div>
+      </div>
+      <nav id="os-menu" class="os-menu" popover aria-label="Mobile">
+        <a href="#features">Features</a>
+        <a href="#how">How it works</a>
+        <a href="#self-host">Self-host</a>
+        <a href="https://github.com/openstuff-dev/open-version">GitHub</a>
+        <hr />
+        <a href="https://version.openstuff.app/sign-in">Sign in</a>
+        <a class="os-button" data-variant="primary" href="#self-host">Self-host it</a>
+      </nav>
+    </header>
+
+    <main id="main">
+      <!-- 2. Hero -->
+      <section class="os-hero" aria-labelledby="hero-title">
+        <div class="os-wrap">
+          <div class="os-hero-copy">
+            <a class="os-pill" href="https://github.com/openstuff-dev/open-version"
+              ><b>MIT</b> Open source and self-hostable</a
+            >
+            <h1 id="hero-title">
+              Tell open tabs a new version is live<span class="os-soft"
+                >No more stale tabs.</span
+              >
+            </h1>
+            <p class="os-hero-sub">
+              OpenVersion is for teams that ship web apps. CI publishes each release, and every
+              open tab offers a reload, or reloads by itself at a safe moment when it must.
+            </p>
+            <div class="os-cta-row">
+              <a class="os-button" data-variant="primary" data-size="lg" href="#self-host"
+                >Self-host it <svg class="os-icon" aria-hidden="true"><use href="#i-arrow" /></svg
+              ></a>
+              <a class="os-button" data-size="lg" href="https://github.com/openstuff-dev/open-version"
+                ><svg class="os-icon" aria-hidden="true"><use href="#i-github" /></svg>View on
+                GitHub</a
+              >
+            </div>
+            <p class="os-hero-meta">
+              <span>Open source</span> · <span>MIT</span> ·
+              <span>Works with any framework, GitHub Actions and any CI</span>
+            </p>
+          </div>
+
+          <figure
+            class="os-hero-visual"
+            aria-label="A CI job publishes Shop 1.5.0 with the openversion CLI, and 40 open tabs are told within one check."
+          >
+            <div class="os-term">
+              <div class="os-term-bar">
+                <span class="os-term-dots" aria-hidden="true"><i></i><i></i><i></i></span
+                ><span class="os-term-title">CI · acme/shop · deploy</span>
+              </div>
+              <pre><code><span class="os-c-mut">$</span> <span class="os-c-brand">npx openversion</span> release --minor --notes-file CHANGELOG.md
+<span class="os-c-ok">Published Shop production: 1.5.0</span>
+
+  live        1.4.2 → <span class="os-c-brand">1.5.0</span>
+  open tabs   ~40, checking every 5 minutes
+  notes       posted to OpenAnnounce as News
+
+  next check  "A new version is ready. Reload"    <span class="os-c-brand">← nobody runs 1.4.2 for long</span></code></pre>
+            </div>
+          </figure>
+        </div>
+      </section>
+
+      <!-- 3. The problem -->
+      <section class="os-section" data-divider aria-labelledby="problem-title">
+        <div class="os-wrap">
+          <div class="os-section-head">
+            <span class="os-eyebrow">The problem</span>
+            <h2 id="problem-title">Deploys don't reach open tabs.</h2>
+            <p class="os-lede">
+              You shipped 1.5.0 at noon. Three people still have the app open from this morning,
+              running yesterday's JavaScript against today's server.
+            </p>
+          </div>
+
+          <div class="os-files">
+            <figure class="os-file">
+              <figcaption class="os-file-head">
+                <span><b>tab</b> opened 08:12</span><small>runs 1.4.2</small>
+              </figcaption>
+              <ol>
+                <li>GET /api/cart</li>
+                <li data-drift="chunk deleted by the deploy">import('/assets/checkout-a1f9.js')</li>
+                <li>ChunkLoadError: Loading chunk failed</li>
+              </ol>
+            </figure>
+            <figure class="os-file">
+              <figcaption class="os-file-head">
+                <span><b>tab</b> opened yesterday</span><small>runs 1.4.1</small>
+              </figcaption>
+              <ol>
+                <li>POST /api/orders</li>
+                <li data-drift="field renamed in 1.5.0">{ "deliveryNote": … }</li>
+                <li>400 Bad Request</li>
+              </ol>
+            </figure>
+            <figure class="os-file">
+              <figcaption class="os-file-head">
+                <span><b>tab</b> opened last week</span><small>runs 1.3.0</small>
+              </figcaption>
+              <ol>
+                <li>Bug report: "basket total is wrong"</li>
+                <li data-gone>fixed in 1.3.1, nine days ago</li>
+                <li>Status: can't reproduce</li>
+              </ol>
+            </figure>
+          </div>
+          <div class="os-notes">
+            <p><b>Stale chunks.</b> Lazy-loaded files from the old build are gone, so navigation breaks.</p>
+            <p><b>Changed APIs.</b> Old code sends old requests, and the server refuses them.</p>
+            <p><b>Fixed bugs, reported again.</b> Support chases bugs that a reload would fix.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. Features -->
+      <section class="os-section" data-divider id="features" aria-labelledby="features-title">
+        <div class="os-wrap">
+          <div class="os-section-head">
+            <span class="os-eyebrow">Features</span>
+            <h2 id="features-title">Every tab on the live version, without nagging anyone.</h2>
+            <p class="os-lede">
+              A small client in your app, a CLI in your CI, and a dashboard for the moments that
+              need a person.
+            </p>
+          </div>
+
+          <div class="os-bento">
+            <article
+              class="os-tile"
+              data-span="2"
+              data-rows="2"
+              data-size="lg"
+              tabindex="0"
+              aria-labelledby="t-main"
+            >
+              <span class="os-tile-tag">The heart of OpenVersion</span>
+              <div class="os-viz" data-layout="split" aria-hidden="true">
+                <div class="os-viz-list">
+                  <p class="os-viz-bubble">
+                    <span class="os-viz-who">CI</span>openversion release --minor
+                  </p>
+                  <p class="os-viz-who" data-play="fade" style="--os-play-delay: 60ms">
+                    → 1.5.0 is live in production
+                  </p>
+                  <div class="os-viz-panel" data-play="rise" style="--os-play-delay: 160ms">
+                    <div class="os-viz-panel-head">
+                      <b>A new version is ready.</b><span class="os-badge" data-tone="brand">1.5.0</span>
+                    </div>
+                    <div class="os-viz-panel-body">
+                      <span class="os-viz-add">Reload · What's new</span>
+                    </div>
+                    <div class="os-viz-panel-foot">
+                      <span class="os-viz-avatar">AK</span>A tab from this morning
+                      <span
+                        class="os-badge"
+                        data-tone="success"
+                        data-play="pop"
+                        style="--os-play-delay: 620ms"
+                        >✓ reloaded</span
+                      >
+                    </div>
+                  </div>
+                </div>
+                <ul class="os-viz-list">
+                  <li class="os-viz-list-head"><span>Open tabs</span><span>~40</span></li>
+                  <li class="os-viz-row" data-new data-play="grow" style="--os-play-delay: 900ms">
+                    1.5.0 · just reloaded
+                  </li>
+                  <li class="os-viz-row">1.5.0 · up to date</li>
+                  <li class="os-viz-row">1.4.2 · toast showing</li>
+                  <li class="os-viz-row">1.4.2 · tab hidden</li>
+                </ul>
+              </div>
+              <h3 id="t-main">A reload, offered at the right moment</h3>
+              <p>
+                Each tab knows the version it was built as. When another one is live, it offers a
+                reload with the release notes, or for a hard release reloads when the tab is hidden
+                or on the next navigation. Never twice, so it can't loop.
+              </p>
+            </article>
+
+            <article class="os-tile" tabindex="0" aria-labelledby="t-plates">
+              <div class="os-viz" aria-hidden="true">
+                <div class="os-viz-plates">
+                  <div class="os-viz-plate" style="--i: 0"><span>preview</span><span>2.0.0-rc.1</span></div>
+                  <div class="os-viz-plate" style="--i: 1"><span>staging</span><span>1.5.0</span></div>
+                  <div class="os-viz-plate" style="--i: 2"><span>production</span><span>1.4.2</span></div>
+                  <div class="os-viz-plate" data-current style="--i: 3"><span>production</span><span>1.5.0</span></div>
+                </div>
+              </div>
+              <h3 id="t-plates">Every environment on its own</h3>
+              <p>Production, staging and previews each have their live version, keys and history.</p>
+            </article>
+
+            <article class="os-tile" tabindex="0" aria-labelledby="t-tree">
+              <div class="os-viz" aria-hidden="true">
+                <ul class="os-viz-tree">
+                  <li data-play="dim">1.5.0 · broke checkout</li>
+                  <li data-play="highlight" style="--d: 0">
+                    1.4.2
+                    <span class="os-badge" data-tone="brand" data-play="fade" style="--os-play-delay: 260ms"
+                      >made live</span
+                    >
+                  </li>
+                  <li data-play="highlight" style="--d: 1; --depth: 1">every tab reloads to 1.4.2</li>
+                  <li data-play="dim">1.4.1</li>
+                  <li data-play="dim">1.4.0</li>
+                </ul>
+              </div>
+              <h3 id="t-tree">Roll back in one click</h3>
+              <p>Make an older release live, and open tabs go back to it. The history keeps both.</p>
+            </article>
+
+            <article class="os-tile" tabindex="0" aria-labelledby="t-flip">
+              <div class="os-viz" aria-hidden="true">
+                <div class="os-viz-list" style="inline-size: min(100%, 17rem)">
+                  <div class="os-viz-panel-foot" style="border: 0; justify-content: flex-end">
+                    Where it lives <span class="os-viz-switch"></span>
+                  </div>
+                  <div class="os-viz-flip">
+                    <div class="os-viz-face">
+                      <b>pk_9Hq…ZtR</b>
+                      <p>In the browser. Reads the live version, from your own origins only.</p>
+                    </div>
+                    <div class="os-viz-face">ov_live_••••3f9a: in a CI secret. Publishes. Shown once.</div>
+                  </div>
+                </div>
+              </div>
+              <h3 id="t-flip">Two keys, never mixed up</h3>
+              <p>The browser can only ask what's live. Only CI's deploy token can publish.</p>
+            </article>
+
+            <article class="os-tile" tabindex="0" aria-labelledby="t-wires">
+              <div class="os-viz" aria-hidden="true">
+                <svg class="os-viz-wires" viewBox="0 0 320 170">
+                  <g>
+                    <rect x="8" y="12" width="96" height="28" rx="6" />
+                    <text x="56" y="30" text-anchor="middle">CLI</text>
+                  </g>
+                  <g>
+                    <rect x="8" y="71" width="96" height="28" rx="6" />
+                    <text x="56" y="89" text-anchor="middle">GitHub Actions</text>
+                  </g>
+                  <g>
+                    <rect x="8" y="130" width="96" height="28" rx="6" />
+                    <text x="56" y="148" text-anchor="middle">Dashboard</text>
+                  </g>
+                  <path class="os-viz-wire" d="M104 26C150 26 160 85 206 85" />
+                  <path class="os-viz-wire" d="M104 85H206" />
+                  <path class="os-viz-wire" d="M104 144C150 144 160 85 206 85" />
+                  <path data-play="pulse" style="--d: 0" d="M104 26C150 26 160 85 206 85" />
+                  <path data-play="pulse" style="--d: 1" d="M104 85H206" />
+                  <path data-play="pulse" style="--d: 2" d="M104 144C150 144 160 85 206 85" />
+                  <g data-node>
+                    <rect x="206" y="64" width="106" height="42" rx="8" />
+                    <text x="259" y="89" text-anchor="middle">OpenVersion</text>
+                  </g>
+                </svg>
+              </div>
+              <h3 id="t-wires">Publish from where you deploy</h3>
+              <p>One CLI step after the deploy, with an idempotency key, so a retried job publishes once.</p>
+            </article>
+
+            <article class="os-tile" tabindex="0" aria-labelledby="t-shrink">
+              <div class="os-viz" aria-hidden="true">
+                <div class="os-viz-list" style="inline-size: min(100%, 17rem)">
+                  <div class="os-viz-lines">
+                    <i style="--w: 80%"></i>
+                    <div class="os-viz-lines" data-play="shrink"><i></i><i style="--w: 60%"></i></div>
+                  </div>
+                  <div class="os-viz-lines">
+                    <i style="--w: 70%"></i>
+                    <div class="os-viz-lines" data-play="shrink" style="--d: 1"><i></i><i style="--w: 50%"></i></div>
+                  </div>
+                  <div class="os-viz-lines" data-tone="brand"><i></i><i style="--w: 90%"></i></div>
+                  <div class="os-viz-list-head"><span>answered 304</span><span>97%</span></div>
+                  <div class="os-viz-meter" data-play="fill" style="--value: 97%; --rest: 100%"><i></i></div>
+                </div>
+              </div>
+              <h3 id="t-shrink">One cheap request per tab</h3>
+              <p>A check is one query with an ETag. Unchanged answers are an empty 304.</p>
+            </article>
+
+            <article class="os-tile" tabindex="0" aria-labelledby="t-file">
+              <div class="os-viz" data-layout="stack" aria-hidden="true">
+                <span class="os-badge" data-tone="warning" data-play="dim" style="justify-self: center"
+                  ><svg class="os-icon" aria-hidden="true"><use href="#i-warn" /></svg>ChunkLoadError</span
+                >
+                <div class="os-viz-panel">
+                  <div class="os-viz-panel-head"><b>Caught by the client</b><span>1</span></div>
+                  <ul class="os-viz-list os-viz-panel-body">
+                    <li class="os-viz-row" data-tone="warning" data-play="grow" style="--os-play-delay: 220ms">
+                      Checked: 1.5.0 is live, reloaded once
+                    </li>
+                    <li class="os-viz-row">vite:preloadError · failed import()</li>
+                  </ul>
+                </div>
+              </div>
+              <h3 id="t-file">Stale chunks, recovered</h3>
+              <p>A failed lazy load makes the tab check at once and reload into the new build.</p>
+            </article>
+
+            <article class="os-tile" data-span="2" tabindex="0" aria-labelledby="t-type">
+              <div class="os-viz" data-layout="stack" aria-hidden="true">
+                <div class="os-term">
+                  <div class="os-term-bar">
+                    <span class="os-term-dots"><i></i><i></i><i></i></span
+                    ><span class="os-term-title">~/open-version</span>
+                  </div>
+                  <pre><code><span class="os-c-mut">$ </span><span data-play="type" style="--chars: 20">docker compose up -d</span><span class="os-viz-caret"></span>
+<span class="os-c-ok" data-play="rise" style="--os-play-delay: 700ms">✔ openversion and postgres started</span>
+<span class="os-c-mut" data-play="rise" style="--os-play-delay: 860ms">→ open http://localhost:8080</span></code></pre>
+                </div>
+              </div>
+              <h3 id="t-type">Self-host in one command</h3>
+              <p>
+                One Docker image, configured with environment variables, with a sensible default for
+                every setting.
+              </p>
+            </article>
+          </div>
+
+          <div class="os-also">
+            <div>
+              <h3>Hard refresh</h3>
+              <p>After a bad deploy or a security fix, every open tab reloads once. No new release needed.</p>
+            </div>
+            <div>
+              <h3>Release notes in OpenAnnounce</h3>
+              <p>Each release can post its notes to OpenAnnounce as News, exactly once.</p>
+            </div>
+            <div>
+              <h3>Export and import</h3>
+              <p>Everything you put in comes out again, and goes back in.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 5. How it works -->
+      <section class="os-section" data-divider id="how" aria-labelledby="how-title">
+        <div class="os-wrap">
+          <div class="os-section-head" data-align="center">
+            <span class="os-eyebrow">How it works</span>
+            <h2 id="how-title">Running in five minutes.</h2>
+          </div>
+          <ol class="os-steps">
+            <li class="os-step">
+              <span class="os-step-n">1</span>
+              <h3>Run it</h3>
+              <p>Start the server and add your app. Each environment gets a public key and a deploy token.</p>
+              <div class="os-term">
+                <div class="os-term-bar">
+                  <span class="os-term-dots" aria-hidden="true"><i></i><i></i><i></i></span
+                  ><span class="os-term-title">terminal</span
+                  ><button class="os-copy" type="button" data-copy="code-run">
+                    <svg aria-hidden="true"><use href="#i-copy" /></svg><span>Copy</span>
+                  </button>
+                </div>
+                <pre><code id="code-run"><span class="os-c-mut">$ </span>git clone https://github.com/openstuff-dev/open-version
+<span class="os-c-mut">$ </span>cd open-version &amp;&amp; docker compose up -d</code></pre>
+              </div>
+            </li>
+            <li class="os-step">
+              <span class="os-step-n">2</span>
+              <h3>Add the client</h3>
+              <p>Tell it the version your build is. <code>&lt;ov-update&gt;</code> shows the toast.</p>
+              <div class="os-term">
+                <div class="os-term-bar">
+                  <span class="os-term-dots" aria-hidden="true"><i></i><i></i><i></i></span
+                  ><span class="os-term-title">main.ts</span
+                  ><button class="os-copy" type="button" data-copy="code-client">
+                    <svg aria-hidden="true"><use href="#i-copy" /></svg><span>Copy</span>
+                  </button>
+                </div>
+                <pre><code id="code-client">import { configure } from '@openstuff-dev/version';
+import '@openstuff-dev/version/update';
+
+configure({
+  url: 'https://version.example.com',
+  publicKey: 'pk_…',
+  version: import.meta.env.VITE_APP_VERSION,
+});</code></pre>
+              </div>
+            </li>
+            <li class="os-step">
+              <span class="os-step-n">3</span>
+              <h3>Publish from CI</h3>
+              <p>One step after your deploy. Open tabs hear about it at their next check.</p>
+              <div class="os-term">
+                <div class="os-term-bar">
+                  <span class="os-term-dots" aria-hidden="true"><i></i><i></i><i></i></span
+                  ><span class="os-term-title">.github/workflows/deploy.yml</span
+                  ><button class="os-copy" type="button" data-copy="code-ci">
+                    <svg aria-hidden="true"><use href="#i-copy" /></svg><span>Copy</span>
+                  </button>
+                </div>
+                <pre><code id="code-ci">- run: npx openversion release --minor --notes-file CHANGELOG.md
+  env:
+    OPENVERSION_URL: https://version.example.com
+    OPENVERSION_TOKEN: ${{ secrets.OPENVERSION_TOKEN }}</code></pre>
+              </div>
+            </li>
+          </ol>
+        </div>
+      </section>
+
+      <!-- 6. Why -->
+      <section class="os-section" data-divider aria-labelledby="why-title">
+        <div class="os-wrap">
+          <div class="os-section-head">
+            <span class="os-eyebrow">Why OpenVersion</span>
+            <h2 id="why-title">Better than "please hard-refresh".</h2>
+          </div>
+          <div class="os-compare-box">
+            <table class="os-compare">
+              <thead>
+                <tr>
+                  <th scope="col"><span class="os-visually-hidden">What matters</span></th>
+                  <th scope="col">A banner, a cache header and hope</th>
+                  <th scope="col" data-us>OpenVersion</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th scope="row">Tabs learn about a deploy</th>
+                  <td>
+                    <span class="os-yn" data-answer="no"
+                      ><svg aria-hidden="true"><use href="#i-x" /></svg>No</span
+                    >Only on their next full page load.
+                  </td>
+                  <td data-us>
+                    <span class="os-yn" data-answer="yes"
+                      ><svg aria-hidden="true"><use href="#i-check" /></svg>Yes</span
+                    >Within one check, and at once on a stale chunk.
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">Force a reload after a bad deploy</th>
+                  <td>
+                    <span class="os-yn" data-answer="partly"
+                      ><svg aria-hidden="true"><use href="#i-dash" /></svg>Partly</span
+                    >Ship another release and wait.
+                  </td>
+                  <td data-us>
+                    <span class="os-yn" data-answer="yes"
+                      ><svg aria-hidden="true"><use href="#i-check" /></svg>Yes</span
+                    >Hard refresh or Make live, at a safe moment, once.
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">You own the data</th>
+                  <td>
+                    <span class="os-yn" data-answer="partly"
+                      ><svg aria-hidden="true"><use href="#i-dash" /></svg>Partly</span
+                    >Release history lives in CI logs.
+                  </td>
+                  <td data-us>
+                    <span class="os-yn" data-answer="yes"
+                      ><svg aria-hidden="true"><use href="#i-check" /></svg>Yes</span
+                    >Self-host it, and export everything.
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">Open source</th>
+                  <td>
+                    <span class="os-yn" data-answer="partly"
+                      ><svg aria-hidden="true"><use href="#i-dash" /></svg>Depends</span
+                    >On the service you use.
+                  </td>
+                  <td data-us>
+                    <span class="os-yn" data-answer="yes"
+                      ><svg aria-hidden="true"><use href="#i-check" /></svg>Yes</span
+                    >MIT licence.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- 7. Open source -->
+      <section class="os-section" data-divider id="self-host" aria-labelledby="oss-title">
+        <div class="os-wrap os-split">
+          <div>
+            <span class="os-eyebrow">Open source</span>
+            <h2 id="oss-title">Read the code, run it, change it.</h2>
+            <ul class="os-checklist">
+              <li>
+                <svg aria-hidden="true"><use href="#i-check" /></svg
+                ><span><b>MIT licence.</b> Use it at work, fork it, sell it.</span>
+              </li>
+              <li>
+                <svg aria-hidden="true"><use href="#i-check" /></svg
+                ><span><b>One Docker image.</b> With Postgres, configured with environment variables.</span>
+              </li>
+              <li>
+                <svg aria-hidden="true"><use href="#i-check" /></svg
+                ><span><b>Your data.</b> On your servers, exportable at any time.</span>
+              </li>
+            </ul>
+            <div class="os-cta-row">
+              <a
+                class="os-button"
+                data-variant="primary"
+                href="https://github.com/openstuff-dev/open-version"
+                ><svg class="os-icon" aria-hidden="true"><use href="#i-github" /></svg>View on
+                GitHub</a
+              >
+              <a class="os-button" href="https://github.com/openstuff-dev/open-version#readme"
+                >Self-hosting guide</a
+              >
+            </div>
+          </div>
+          <div>
+            <div class="os-term">
+              <div class="os-term-bar">
+                <span class="os-term-dots" aria-hidden="true"><i></i><i></i><i></i></span
+                ><span class="os-term-title">terminal</span
+                ><button class="os-copy" type="button" data-copy="code-pull">
+                  <svg aria-hidden="true"><use href="#i-copy" /></svg><span>Copy</span>
+                </button>
+              </div>
+              <pre><code id="code-pull"><span class="os-c-mut">$ </span>git clone https://github.com/openstuff-dev/open-version
+<span class="os-c-mut">$ </span>cd open-version &amp;&amp; docker compose up -d</code></pre>
+            </div>
+            <div class="os-family">
+              <p>Part of the OpenStuff family: tools built on one shared toolkit.</p>
+              <div class="os-family-row">
+                <a href="https://github.com/openstuff-dev"
+                  ><svg class="os-mark" aria-hidden="true">
+                    <use href="assets/logo.svg#mark-openstuff" /></svg
+                  >OpenStuff</a
+                >
+                <a href="https://purpose.openstuff.dev" style="--os-mark-core: #2d5bff"
+                  ><svg class="os-mark" aria-hidden="true">
+                    <use href="assets/logo.svg#mark-open-purpose" /></svg
+                  >OpenPurpose</a
+                >
+                <a href="https://announce.openstuff.dev" style="--os-mark-core: #e8590c"
+                  ><svg class="os-mark" aria-hidden="true">
+                    <use href="assets/logo.svg#mark-open-announce" /></svg
+                  >OpenAnnounce</a
+                >
+                <a href="https://relay.openstuff.dev" style="--os-mark-core: #0d9488"
+                  ><svg class="os-mark" aria-hidden="true">
+                    <use href="assets/logo.svg#mark-open-relay" /></svg
+                  >OpenRelay</a
+                >
+                <span
+                  ><svg class="os-mark" aria-hidden="true">
+                    <use href="assets/logo.svg#mark-open-version" /></svg
+                  >OpenVersion</span
+                >
+                <a href="https://design.openstuff.dev" style="--os-mark-core: #9442d9"
+                  ><svg class="os-mark" aria-hidden="true">
+                    <use href="assets/logo.svg#mark-openstuff-design" /></svg
+                  >OpenStuff Design</a
+                >
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 8. For teams -->
+      <section class="os-section" data-divider aria-labelledby="teams-title">
+        <div class="os-wrap">
+          <div class="os-section-head">
+            <span class="os-eyebrow">For teams and companies</span>
+            <h2 id="teams-title">Every app your company runs, on one server.</h2>
+            <p class="os-lede">
+              Each team has its own apps, keys and people, kept apart from the other teams in the
+              database itself.
+            </p>
+          </div>
+          <div class="os-features">
+            <div>
+              <svg aria-hidden="true"><use href="#i-layers" /></svg>
+              <h3>Apps and environments</h3>
+              <p>One row per environment, with its live version and how many tabs have it open.</p>
+            </div>
+            <div>
+              <svg aria-hidden="true"><use href="#i-building" /></svg>
+              <h3>Teams</h3>
+              <p>Separate teams on one server, kept apart with Postgres row-level security.</p>
+            </div>
+            <div>
+              <svg aria-hidden="true"><use href="#i-shield" /></svg>
+              <h3>Safe by default</h3>
+              <p>Tokens stored hashed and shown once, integration keys encrypted, no tracking.</p>
+            </div>
+            <div>
+              <svg aria-hidden="true"><use href="#i-users" /></svg>
+              <h3>Roles</h3>
+              <p>Admins manage people. Developers publish and refresh. Viewers look.</p>
+            </div>
+            <div>
+              <svg aria-hidden="true"><use href="#i-key" /></svg>
+              <h3>Allowed origins</h3>
+              <p>Only your own sites can ask an environment what's live.</p>
+            </div>
+            <div>
+              <svg aria-hidden="true"><use href="#i-swap" /></svg>
+              <h3>Export and import</h3>
+              <p>Move a team, its apps and its release history to another server.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 9. FAQ -->
+      <section class="os-section" data-divider aria-labelledby="faq-title">
+        <div class="os-wrap">
+          <div class="os-section-head" data-align="center">
+            <span class="os-eyebrow">FAQ</span>
+            <h2 id="faq-title">Questions people ask first</h2>
+          </div>
+          <div class="os-faq">
+            <details name="faq">
+              <summary>Is it free?</summary>
+              <div class="os-faq-answer">
+                <p>
+                  Yes. OpenVersion is open source under the MIT licence, so self-hosting costs
+                  nothing but your server.
+                </p>
+              </div>
+            </details>
+            <details name="faq">
+              <summary>Will it reload a page while someone is typing?</summary>
+              <div class="os-faq-answer">
+                <p>
+                  Not for a normal release: people get a toast and reload when they choose. A hard
+                  release or a hard refresh waits until the tab is hidden or the person navigates,
+                  or shows a countdown with Reload now. Your app can also take over the forced
+                  reload, for example to save a form first.
+                </p>
+              </div>
+            </details>
+            <details name="faq">
+              <summary>Does it work with my framework?</summary>
+              <div class="os-faq-answer">
+                <p>
+                  Yes. The client is plain JavaScript and <code>&lt;ov-update&gt;</code> is a web
+                  component, so it works with Angular, React, Vue, Svelte or none. Give it the
+                  version your build is, from your bundler or <code>package.json</code>.
+                </p>
+              </div>
+            </details>
+            <details name="faq">
+              <summary>Where is my data?</summary>
+              <div class="os-faq-answer">
+                <p>
+                  On your own server, in your Postgres. OpenVersion keeps your apps, releases and
+                  a per-minute count of version checks for the last hour, with no addresses or user
+                  data. Admins can export everything to one JSON file.
+                </p>
+              </div>
+            </details>
+            <details name="faq">
+              <summary>How is this different from a service worker update?</summary>
+              <div class="os-faq-answer">
+                <p>
+                  A service worker knows a new build exists only after it downloads one, and it
+                  can't roll back or force a reload across every tab. OpenVersion knows what's live
+                  from your CI, works without a service worker, and gives you rollback and hard
+                  refresh. They work fine together.
+                </p>
+              </div>
+            </details>
+          </div>
+        </div>
+      </section>
+
+      <!-- 10. Final call to action -->
+      <section class="os-section os-final" data-divider aria-labelledby="final-title">
+        <div class="os-wrap">
+          <h2 id="final-title">Ship, and every open tab follows.</h2>
+          <p class="os-lede">Run it on your own server in five minutes.</p>
+          <div class="os-cta-row">
+            <a
+              class="os-button"
+              data-variant="primary"
+              data-size="lg"
+              href="https://github.com/openstuff-dev/open-version#try-it"
+              >Self-host it <svg class="os-icon" aria-hidden="true"><use href="#i-arrow" /></svg
+            ></a>
+            <a class="os-button" data-size="lg" href="https://github.com/openstuff-dev/open-version"
+              ><svg class="os-icon" aria-hidden="true"><use href="#i-github" /></svg>View on GitHub</a
+            >
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="os-footer">
+      <div class="os-wrap">
+        <div>
+          <a
+            class="os-brand"
+            href="https://github.com/openstuff-dev"
+            aria-label="OpenStuff on GitHub"
+          >
+            <svg class="os-mark" aria-hidden="true">
+              <use href="assets/logo.svg#mark-openstuff" />
+            </svg>
+            <span class="os-wordmark" aria-hidden="true">Open<b>Stuff</b></span>
+          </a>
+          <small>Made by OpenStuff. OpenVersion is released under the MIT licence.</small>
+        </div>
+        <nav aria-label="Footer">
+          <a href="https://github.com/openstuff-dev/open-version">GitHub</a>
+          <a href="https://design.openstuff.dev">Design</a>
+          <a href="https://github.com/openstuff-dev/open-version/blob/HEAD/LICENSE">Licence</a>
+          <a href="https://version.openstuff.app/sign-in">Sign in</a>
+        </nav>
+      </div>
+    </footer>
+  </body>
+</html>

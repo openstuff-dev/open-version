@@ -1,0 +1,6 @@
+/*
+ * OpenVersion site. The look comes from the OpenStuff toolkit in os/toolkit.css (generated: run
+ * npx nx g @openstuff-dev/nx:sync to update it). Add only what this page needs below, with
+ * --os-* tokens. These rules are outside the toolkit's layers, so they win without !important.
+ */
+@import url('./os/toolkit.css');

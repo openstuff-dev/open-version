@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <!-- The source of og.png. Export it at 1200×630 after you change the text. -->
+  <rect width="1200" height="630" fill="#16181d"/>
+  <circle cx="600" cy="-80" r="520" fill="#c2255c" opacity="0.14"/>
+  <g transform="translate(96 96) scale(2.5)" fill="#eef0f6">
+    <path fill-rule="evenodd" d="M16 1.5a14.5 14.5 0 1 0 0 29a14.5 14.5 0 1 0 0-29Zm0 4a10.5 10.5 0 1 1 0 21a10.5 10.5 0 1 1 0-21Z"/><path fill="#c2255c" d="M10.75 17.4a5.25 5.25 0 0 1 10.5 0Z"/>
+  </g>
+  <text x="196" y="148" fill="#eef0f6" font-family="Geist, system-ui, sans-serif" font-size="44" font-weight="500" letter-spacing="-1">Open<tspan font-weight="700">Version</tspan></text>
+  <text x="96" y="330" fill="#eef0f6" font-family="Geist, system-ui, sans-serif" font-size="76" font-weight="600" letter-spacing="-3">Tell open tabs a new</text>
+  <text x="96" y="414" fill="#a9afbd" font-family="Geist, system-ui, sans-serif" font-size="76" font-weight="600" letter-spacing="-3">version is live.</text>
+  <text x="96" y="492" fill="#a9afbd" font-family="Geist, system-ui, sans-serif" font-size="34">Publish from CI. Every open tab follows.</text>
+  <text x="96" y="550" fill="#7d8494" font-family="Geist Mono, ui-monospace, monospace" font-size="24">version.openstuff.dev · Open source · MIT</text>
+</svg>
