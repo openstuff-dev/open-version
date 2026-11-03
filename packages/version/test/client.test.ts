@@ -171,6 +171,24 @@ describe('VersionClient', () => {
     client.stop();
   });
 
+  it('tries again after Retry-After when it is rate-limited', async () => {
+    const b = fakeBrowser();
+    let limited = true;
+    const real = b.env.fetch;
+    b.env.fetch = ((url: string, init?: RequestInit) =>
+      limited
+        ? Promise.resolve(new Response('{}', { status: 429, headers: { 'Retry-After': '20' } }))
+        : real(url, init)) as typeof fetch;
+    b.set({ version: '1.5.0' });
+    const client = new VersionClient({ ...config, interval: 0 }, b.env).start();
+    await client.check();
+    expect(client.current.decision).toBe('none');
+    limited = false;
+    await vi.advanceTimersByTimeAsync(31_000);
+    expect(client.current.decision).toBe('prompt');
+    client.stop();
+  });
+
   it('keeps quiet when the server cannot be reached', async () => {
     const b = fakeBrowser();
     b.offline(true);

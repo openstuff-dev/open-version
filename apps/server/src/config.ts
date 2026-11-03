@@ -24,7 +24,12 @@ export interface Config {
   trustProxy: boolean | string;
   /** Serve the demo host page at /demo. */
   demo: boolean;
-  /** Version checks allowed per public key and address, per minute. */
+  /**
+   * Version checks allowed per public key and address, per minute; 0 turns the limit off.
+   * High by default: a whole office (or every user behind a proxy without
+   * OPENVERSION_TRUST_PROXY) shares one address, and a refused tab misses the update until its
+   * next check. 1200 a minute is about 6000 tabs checking every 5 minutes.
+   */
   versionRateLimit: number;
 }
 
@@ -48,6 +53,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
       .filter(Boolean),
     trustProxy: trust === 'true' ? true : trust || false,
     demo: env.OPENVERSION_DEMO === 'on',
-    versionRateLimit: Number(env.OPENVERSION_VERSION_RATE_LIMIT ?? 120),
+    versionRateLimit: Number(env.OPENVERSION_VERSION_RATE_LIMIT ?? 1200),
   };
 }

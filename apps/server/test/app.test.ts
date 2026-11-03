@@ -18,8 +18,12 @@ describe('config', () => {
       fetchAllow: [],
       trustProxy: false,
       demo: false,
-      versionRateLimit: 120,
+      versionRateLimit: 1200,
     });
+  });
+
+  it('turns the version-check limit off with 0', () => {
+    expect(loadConfig({ OPENVERSION_VERSION_RATE_LIMIT: '0' }).versionRateLimit).toBe(0);
   });
 
   it('reads the fetch allowlist and trims the public URL', () => {

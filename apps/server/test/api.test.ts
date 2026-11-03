@@ -279,6 +279,21 @@ describe.skipIf(!url)('API against Postgres', () => {
       }
     });
 
+    it('has no limit when it is set to 0', async () => {
+      const unlimited = await buildApp(
+        { ...loadConfig({}), databaseUrl: url, logLevel: 'silent', versionRateLimit: 0 },
+        pool,
+      );
+      try {
+        for (let i = 0; i < 5; i++) {
+          const response = await unlimited.inject({ url: `/api/v1/version?key=${staging.publicKey}` });
+          expect(response.statusCode).toBe(200);
+        }
+      } finally {
+        await unlimited.close();
+      }
+    });
+
     it('serves the notes page with the notes escaped', async () => {
       const info = (await version(staging.publicKey)).json<VersionInfo>();
       const page = await inject(null, 'GET', new URL(must(info.notesUrl)).pathname);

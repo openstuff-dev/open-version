@@ -61,6 +61,7 @@ async function versionRow(
 function rateLimiter(perMinute: number) {
   const windows = new Map<string, { count: number; until: number }>();
   return (key: string): number | null => {
+    if (perMinute <= 0) return null;
     const now = Date.now();
     const entry = windows.get(key);
     if (!entry || entry.until <= now) {

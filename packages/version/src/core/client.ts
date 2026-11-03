@@ -220,6 +220,8 @@ export class VersionClient {
   stop(): void {
     for (const cleanup of this.cleanups.splice(0)) cleanup();
     this.env.clearTimeout(this.countdownTimer);
+    this.env.clearTimeout(this.retryTimer);
+    this.retryTimer = undefined;
     this.started = false;
   }
 
@@ -263,6 +265,11 @@ export class VersionClient {
       if (response.status === 200) {
         live = (await response.json()) as VersionInfo;
         this.etag = response.headers.get('ETag');
+      } else if (response.status === 429) {
+        // Rate-limited (many tabs behind one address): try once more after the server's wait,
+        // spread out a little so the tabs don't all come back at the same moment.
+        this.retryAfter(Number(response.headers.get('Retry-After')) || 60);
+        return this.state;
       } else if (response.status !== 304) {
         return this.state;
       }
@@ -275,6 +282,17 @@ export class VersionClient {
     this.seenEpoch ??= live.epoch;
     this.apply(live);
     return this.state;
+  }
+
+  private retryTimer: unknown;
+
+  private retryAfter(seconds: number): void {
+    if (this.retryTimer !== undefined) return;
+    const wait = (Math.min(seconds, 600) + Math.random() * 10) * 1000;
+    this.retryTimer = this.env.setTimeout(() => {
+      this.retryTimer = undefined;
+      void this.check();
+    }, wait);
   }
 
   private apply(live: VersionInfo): void {
