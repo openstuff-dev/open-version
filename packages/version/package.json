@@ -1,6 +1,6 @@
 {
   "name": "@openstuff-dev/version",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Tell open browser tabs that a new version of your web app is live: a tiny client, the <ov-update> element and the openversion CLI for CI.",
   "type": "module",
   "exports": {
