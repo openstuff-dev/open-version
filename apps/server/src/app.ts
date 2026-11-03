@@ -90,9 +90,10 @@ export async function buildApp(
 
   if (config.webDir) {
     await app.register(fastifyStatic, { root: config.webDir, wildcard: false });
-    // The web app routes in the browser, so any other page gets index.html.
+    // The web app routes in the browser, so any other page gets index.html. A missing file
+    // (an old build's chunk) is a 404, never index.html, so a stale tab sees a chunk error.
     app.setNotFoundHandler((request, reply) =>
-      request.url.startsWith('/api/')
+      request.url.startsWith('/api/') || /\.\w+$/.test(request.url.split('?')[0])
         ? reply.code(404).send({ error: 'Not found' })
         : reply.sendFile('index.html'),
     );

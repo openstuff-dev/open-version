@@ -17,3 +17,73 @@ body {
   gap: var(--os-space-4);
   align-content: start;
 }
+
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+}
+
+p {
+  text-wrap: pretty;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none;
+  }
+}
+
+/* Versions, keys, tokens and commands. */
+.mono {
+  font-family: var(--os-font-mono);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Fields side by side, wrapping when the container is narrow. */
+.inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--os-space-3);
+  align-items: end;
+}
+
+.muted {
+  color: var(--os-fg-muted);
+}
+
+/* A code block with a copy button in its corner. */
+.code-block {
+  position: relative;
+
+  pre {
+    overflow-x: auto;
+    margin: 0;
+    padding: var(--os-space-3) var(--os-space-10) var(--os-space-3) var(--os-space-3);
+    border: 1px var(--os-border-style) var(--os-border-default);
+    border-radius: var(--os-radius-md);
+    background: var(--os-bg-alternative);
+    font-family: var(--os-font-mono);
+    font-size: var(--os-text-sm);
+    line-height: 1.6;
+  }
+
+  app-copy-button {
+    position: absolute;
+    inset: var(--os-space-1) var(--os-space-1) auto auto;
+  }
+}
+
+/* What's in a panel, one under the other. */
+.os-panel-body:not([data-flush]) {
+  display: grid;
+  gap: var(--os-space-4);
+  align-content: start;
+}
