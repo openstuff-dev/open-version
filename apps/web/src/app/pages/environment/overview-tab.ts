@@ -104,12 +104,20 @@ import { TimeAgo } from '../../shared/time-ago';
                 </span>
                 @if (session.canWrite() && r.id !== liveId() && r.version !== liveVersion()) {
                   <button type="button" os-button size="sm" class="make-live" (click)="makeLive(r)">
-                    Make live
+                    Make live<span class="os-visually-hidden">: {{ r.version }}</span>
                   </button>
                 }
               </div>
               @if (preview(r); as text) {
-                <p class="notes">{{ text }}</p>
+                @if (!hasMore(r)) {
+                  <p class="notes">{{ text }}</p>
+                } @else {
+                  <!-- The first line, and the whole notes one click away. -->
+                  <details class="notes">
+                    <summary>{{ text }}</summary>
+                    <div class="full">{{ r.notes }}</div>
+                  </details>
+                }
               } @else if (r.rollbackOf) {
                 <p class="notes muted">Made {{ r.version }} live again.</p>
               }
@@ -134,7 +142,7 @@ import { TimeAgo } from '../../shared/time-ago';
                     (d.status === 'failed' || d.lastError)
                   ) {
                     <button type="button" os-button size="sm" variant="ghost" (click)="retry(r, d)">
-                      Retry
+                      Retry<span class="os-visually-hidden"> posting {{ r.version }}</span>
                     </button>
                   }
                 </p>
@@ -248,10 +256,17 @@ import { TimeAgo } from '../../shared/time-ago';
       font-size: var(--os-text-sm);
     }
 
-    .notes {
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+    .notes summary {
+      cursor: pointer;
+      overflow-wrap: anywhere;
+    }
+
+    .full {
+      margin-block-start: var(--os-space-2);
+      padding-inline-start: var(--os-space-3);
+      border-inline-start: 2px var(--os-border-style) var(--os-border-default);
+      overflow-wrap: anywhere;
+      white-space: pre-wrap;
     }
 
     .delivery {
@@ -288,6 +303,9 @@ export class OverviewTab {
   protected readonly liveId = computed(() => this.env().live?.id ?? null);
   protected readonly liveVersion = computed(() => this.env().live?.version ?? null);
   protected readonly preview = (r: Release) => notesPreview(r.notes);
+  /** Notes longer than one line get a disclosure with all of them. */
+  protected readonly hasMore = (r: Release) =>
+    r.notes.split('\n').filter((l) => l.trim()).length > 1;
 
   protected readonly publishOpen = signal(false);
   protected readonly publishing = signal(false);

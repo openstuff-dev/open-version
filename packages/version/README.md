@@ -33,8 +33,15 @@ configure({
 ```
 
 ```html
-<ov-update></ov-update>
+<body>
+  <ov-update></ov-update> <!-- first in <body>: the reload banner sits at the top -->
+  …
+</body>
 ```
+
+The countdown banner takes its own row where the element is and sticks to the top while
+scrolling, so it never covers your header. The toast floats in the corner. Screen readers hear
+both once, through a live region.
 
 With Vite, for example: `define: { 'import.meta.env.VITE_APP_VERSION': JSON.stringify(process.env.npm_package_version) }`.
 

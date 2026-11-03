@@ -124,7 +124,7 @@ const ROLES: Role[] = ['developer', 'viewer', 'admin'];
               size="sm"
               (click)="remove(m)"
             >
-              Remove
+              Remove<span class="os-visually-hidden"> {{ m.name || m.email }}</span>
             </button>
           }
         </ng-template>

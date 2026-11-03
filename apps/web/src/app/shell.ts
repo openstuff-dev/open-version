@@ -228,7 +228,7 @@ export function initials(name: string): string {
             </nav>
           }
         </header>
-        <main os-page>
+        <main os-page id="main" tabindex="-1">
           <router-outlet />
         </main>
       </div>
@@ -442,6 +442,10 @@ export function initials(name: string): string {
     .crumbs {
       min-inline-size: 0;
     }
+
+    main:focus:not(:focus-visible) {
+      outline: none;
+    }
   `,
 })
 export class Shell {
@@ -487,10 +491,18 @@ export class Shell {
       }
     };
     sync();
+    let lastPath = this.router.url.split('?')[0];
     const sub = this.router.events.subscribe((event) => {
       if (event instanceof NavigationEnd) {
         sync();
         this.menuOpen.set(false);
+        // A new page (not just a new tab or filter in the query): screen readers and keyboards
+        // start at its content, as they would after a full page load.
+        const path = event.urlAfterRedirects.split('?')[0];
+        if (path !== lastPath) {
+          lastPath = path;
+          document.getElementById('main')?.focus({ preventScroll: true });
+        }
       }
     });
     inject(DestroyRef).onDestroy(() => {

@@ -32,6 +32,7 @@ const css = `
   font-family: var(--ov-font);
   color: var(--ov-fg);
 }
+:host { display: block; }
 :host([hidden]) { display: none; }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
@@ -53,8 +54,8 @@ const css = `
   animation: ov-in 200ms cubic-bezier(0.2, 0, 0, 1);
 }
 .banner {
-  position: fixed;
-  inset: 0 0 auto;
+  position: sticky;
+  inset-block-start: 0;
   z-index: var(--ov-z);
   display: flex;
   flex-wrap: wrap;
@@ -100,8 +101,11 @@ const css = `
   line-height: 1;
   cursor: pointer;
 }
-.button:hover { filter: brightness(1.08); }
-.close:hover, .button.secondary:hover { background: color-mix(in srgb, currentColor 10%, transparent); filter: none; }
+@media (hover: hover) {
+  .button:hover { filter: brightness(1.08); }
+  .close:hover, .button.secondary:hover { background: color-mix(in srgb, currentColor 10%, transparent); filter: none; }
+}
+.live { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .button:focus-visible, .close:focus-visible { outline: 2px solid var(--ov-accent); outline-offset: 2px; }
 @keyframes ov-in { from { opacity: 0; transform: translateY(8px); } }
 @media (prefers-reduced-motion: reduce) { .toast { animation: none; } }
@@ -134,13 +138,13 @@ export class OvUpdate extends HTMLElement {
   static observedAttributes = ['url', 'public-key', 'version'];
 
   private readonly root: ShadowRoot;
-  private readonly toast = el('div', { class: 'toast', part: 'toast', role: 'status', hidden: '' });
-  private readonly banner = el('div', {
-    class: 'banner',
-    part: 'banner',
-    role: 'status',
-    hidden: '',
-  });
+  private readonly toast = el('div', { class: 'toast', part: 'toast', hidden: '' });
+  private readonly banner = el('div', { class: 'banner', part: 'banner', hidden: '' });
+  /**
+   * One live region, in the page from the start and empty, so screen readers announce the
+   * update when its text changes. The toast and banner themselves aren't live regions.
+   */
+  private readonly live = el('div', { class: 'live', role: 'status' });
 
   private client: VersionClient | undefined;
   private own: VersionClient | undefined;
@@ -154,7 +158,7 @@ export class OvUpdate extends HTMLElement {
     sheet ??= new CSSStyleSheet();
     if (!sheet.cssRules.length) sheet.replaceSync(css);
     this.root.adoptedStyleSheets = [sheet];
-    this.root.append(this.toast, this.banner);
+    this.root.append(this.banner, this.toast, this.live);
   }
 
   connectedCallback(): void {
@@ -205,9 +209,20 @@ export class OvUpdate extends HTMLElement {
     clearInterval(this.tick);
     this.tick = undefined;
 
-    if (showToast && this.toast.hidden) this.toast.replaceChildren(...this.toastContent(state));
+    if (showToast && this.toast.hidden) {
+      this.toast.replaceChildren(...this.toastContent(state));
+      this.announce(this.label('message', 'A new version is ready.'));
+    }
     this.toast.hidden = !showToast;
 
+    if (showBanner && this.banner.hidden) {
+      const seconds = Math.max(0, Math.ceil(((state.reloadAt ?? 0) - Date.now()) / 1000));
+      const sentence = this.label(
+        'forced-message',
+        'A new version is live. This page reloads in {s}.',
+      );
+      this.announce(sentence.replace('{s}', `${seconds} seconds`));
+    }
     if (showBanner) {
       const reloadAt = state.reloadAt ?? 0;
       const countdown = el('span', { class: 'countdown', part: 'countdown' });
@@ -230,6 +245,15 @@ export class OvUpdate extends HTMLElement {
       this.banner.replaceChildren(message, now);
     }
     this.banner.hidden = !showBanner;
+  }
+
+  /** Says `text` once through the live region. */
+  private announce(text: string): void {
+    this.live.textContent = '';
+    // A moment later, so the change from empty to text is announced even if the text repeats.
+    setTimeout(() => {
+      this.live.textContent = text;
+    }, 50);
   }
 
   private toastContent(state: UpdateState): Node[] {

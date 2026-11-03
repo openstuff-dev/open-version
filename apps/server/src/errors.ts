@@ -30,6 +30,6 @@ export function registerErrorHandler(app: FastifyInstance): void {
     const status = (error).statusCode;
     if (status && status < 500) return reply.code(status).send({ error: error.message });
     request.log.error(error);
-    return reply.code(500).send({ error: 'Something went wrong on the server.' });
+    return reply.code(500).send({ error: 'Something went wrong on the server. Try again in a moment; if it keeps failing, the server log has the details.' });
   });
 }

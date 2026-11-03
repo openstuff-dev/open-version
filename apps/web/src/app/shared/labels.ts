@@ -37,10 +37,11 @@ export function timeAgo(iso: string, now = Date.now()): string {
 }
 
 /** "~40 open tabs" from the version checks of the last 5 minutes. */
+const plural = new Intl.PluralRules('en');
+
 export function openTabs(checks: number): string {
   if (checks === 0) return 'No open tabs checked in during the last 5 minutes';
-  if (checks === 1) return '~1 open tab';
-  return `~${checks} open tabs`;
+  return plural.select(checks) === 'one' ? `~${checks} open tab` : `~${checks} open tabs`;
 }
 
 /** The first line of release notes, without markdown marks or headings, for a preview. */

@@ -92,6 +92,7 @@ function page(url: string, env: DemoEnv, dashboard: string): string {
   </style>
 </head>
 <body>
+  <ov-update></ov-update>
   <header>
     <strong>${esc(env.appName)}</strong>
     <span>Running <span class="mono">${esc(version)}</span> · <span class="mono">${esc(env.envName)}</span></span>
@@ -116,7 +117,6 @@ function page(url: string, env: DemoEnv, dashboard: string): string {
     </dl>
     <p><label>Something you were typing <input placeholder="Unsaved work is lost on a hard refresh"></label></p>
   </main>
-  <ov-update></ov-update>
   <script type="module">
     import { configure } from '@openstuff-dev/version';
     import '@openstuff-dev/version/update';
