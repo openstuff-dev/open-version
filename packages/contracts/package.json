@@ -1,0 +1,39 @@
+{
+  "name": "@open-version/contracts",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Types shared by the OpenVersion server and web app. Not published.",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@openstuff-dev/version": "*"
+  },
+  "devDependencies": {
+    "typescript": "~6.0.3",
+    "vitest": "^5.0.1"
+  },
+  "license": "MIT",
+  "nx": {
+    "name": "contracts",
+    "tags": [
+      "type:package"
+    ],
+    "targets": {
+      "build": {
+        "outputs": [
+          "{projectRoot}/dist"
+        ]
+      }
+    }
+  }
+}

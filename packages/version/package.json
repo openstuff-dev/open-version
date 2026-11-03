@@ -1,0 +1,59 @@
+{
+  "name": "@openstuff-dev/version",
+  "version": "0.0.0",
+  "description": "Tell open browser tabs that a new version of your web app is live: a tiny client, the <ov-update> element and the openversion CLI for CI.",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/core/index.d.ts",
+      "import": "./dist/core/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "!**/*.tsbuildinfo"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "~6.0.3",
+    "vitest": "^5.0.1"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/openstuff-dev/open-version.git",
+    "directory": "packages/version"
+  },
+  "keywords": [
+    "version",
+    "reload",
+    "deploy",
+    "stale",
+    "chunkloaderror",
+    "web-components",
+    "openversion"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "nx": {
+    "name": "version",
+    "tags": [
+      "type:package"
+    ],
+    "targets": {
+      "build": {
+        "outputs": [
+          "{projectRoot}/dist"
+        ]
+      }
+    }
+  }
+}
