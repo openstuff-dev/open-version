@@ -11,6 +11,7 @@ import type { Pool } from './db.js';
 import { registerErrorHandler } from './errors.js';
 import { registerIdempotency } from './idempotency.js';
 import { registerAppRoutes } from './routes/apps.js';
+import { registerDemo } from './routes/demo.js';
 import { registerIntegrationRoutes, type TestConnection } from './routes/integrations.js';
 import { registerReleaseRoutes } from './routes/releases.js';
 import { registerTeamRoutes } from './routes/teams.js';
@@ -87,6 +88,8 @@ export async function buildApp(
       void reply.header('Access-Control-Allow-Origin', '*');
     },
   });
+
+  if (config.demo) registerDemo(app, pool, config);
 
   if (config.webDir) {
     await app.register(fastifyStatic, { root: config.webDir, wildcard: false });

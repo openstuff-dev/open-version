@@ -294,6 +294,20 @@ describe.skipIf(!url)('API against Postgres', () => {
       expect((await inject(null, 'GET', '/sdk/cli/index.js')).statusCode).toBe(404);
     });
 
+    it('serves the demo page only with OPENVERSION_DEMO=on, as the live version', async () => {
+      expect((await inject(null, 'GET', '/demo')).statusCode).toBe(404);
+      const demo = await buildApp({ ...loadConfig({ OPENVERSION_DEMO: 'on' }), databaseUrl: url, logLevel: 'silent' }, pool);
+      try {
+        const page = await demo.inject({ url: '/demo?app=shop&env=staging' });
+        expect(page.statusCode).toBe(200);
+        expect(page.body).toContain('"version":"1.5.0-rc.1"');
+        expect(page.body).toContain(staging.publicKey);
+        expect((await demo.inject({ url: '/demo?app=nope' })).statusCode).toBe(404);
+      } finally {
+        await demo.close();
+      }
+    });
+
     it('documents /api/v1 in OpenAPI', async () => {
       const doc = (await inject(null, 'GET', '/api/v1/openapi.json')).json<{ paths: Record<string, unknown> }>();
       expect(Object.keys(doc.paths).sort()).toEqual(['/api/v1/refresh', '/api/v1/releases', '/api/v1/releases/live', '/api/v1/version']);
