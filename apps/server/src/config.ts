@@ -5,13 +5,49 @@ export interface Config {
   /** The built web app to serve next to the API, if any. */
   webDir: string | undefined;
   logLevel: string;
+  databaseUrl: string;
+  /** Where people and clients reach OpenVersion. Used for cookies, links and setup snippets. */
+  publicUrl: string;
+  /** The first admin's email and password. Without a password, one is made and logged once. */
+  adminEmail: string;
+  adminPassword: string | undefined;
+  sessionDays: number;
+  /**
+   * Encrypts integration keys at rest. Without it, one is made on first start and kept in the
+   * database (a dump alone then reveals the keys).
+   */
+  secretKey: string | undefined;
+  /** `private` lets integrations reach internal addresses (only the hosts in fetchAllow). */
+  fetch: 'public' | 'private';
+  fetchAllow: string[];
+  /** Behind a reverse proxy: true, or the proxy's addresses. */
+  trustProxy: boolean | string;
+  /** Serve the demo host page at /demo. */
+  demo: boolean;
+  /** Version checks allowed per public key and address, per minute. */
+  versionRateLimit: number;
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
+  const trust = env.OPENVERSION_TRUST_PROXY ?? '';
   return {
     port: Number(env.PORT ?? 8080),
     host: env.HOST ?? '0.0.0.0',
     webDir: env.WEB_DIR || undefined,
     logLevel: env.LOG_LEVEL ?? 'info',
+    databaseUrl: env.DATABASE_URL ?? 'postgres://openversion:openversion@localhost:5432/openversion',
+    publicUrl: (env.OPENVERSION_PUBLIC_URL ?? 'http://localhost:8080').replace(/\/$/, ''),
+    adminEmail: (env.OPENVERSION_ADMIN_EMAIL ?? 'admin@example.com').toLowerCase(),
+    adminPassword: env.OPENVERSION_ADMIN_PASSWORD || undefined,
+    sessionDays: Number(env.OPENVERSION_SESSION_DAYS ?? 30),
+    secretKey: env.OPENVERSION_SECRET_KEY || undefined,
+    fetch: env.OPENVERSION_FETCH === 'private' ? 'private' : 'public',
+    fetchAllow: (env.OPENVERSION_FETCH_ALLOW ?? '')
+      .split(',')
+      .map((h) => h.trim().toLowerCase())
+      .filter(Boolean),
+    trustProxy: trust === 'true' ? true : trust || false,
+    demo: env.OPENVERSION_DEMO === 'on',
+    versionRateLimit: Number(env.OPENVERSION_VERSION_RATE_LIMIT ?? 120),
   };
 }
