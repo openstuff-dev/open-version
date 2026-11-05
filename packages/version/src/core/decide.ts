@@ -35,3 +35,7 @@ export function decide(running: string, seen: number | null, live: LiveState): D
   if (live.version === null || sameVersion(running, live.version)) return 'none';
   return live.hard || live.policy === 'force' ? 'force' : 'prompt';
 }
+
+/** When open tabs act on a hard refresh. The dashboard and the CLI both say this. */
+export const HARD_REFRESH_TIMING =
+  'Visible tabs reload after their next check, about 5 minutes by default, plus a 30-second countdown. Background tabs reload when they are shown again.';
