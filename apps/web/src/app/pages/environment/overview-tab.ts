@@ -9,7 +9,13 @@ import {
   signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { bump, type Delivery, type Environment, type Release } from '@open-version/contracts';
+import {
+  bump,
+  type Delivery,
+  type Environment,
+  HARD_REFRESH_TIMING,
+  type Release,
+} from '@open-version/contracts';
 import {
   Badge,
   Button,
@@ -329,7 +335,7 @@ export class OverviewTab {
     const env = this.env();
     const ok = await this.confirm.confirm({
       title: 'Reload every open tab?',
-      message: `Everyone who has ${env.appName} open reloads at their next check, within 5 minutes. Unsaved work in forms may be lost.`,
+      message: `${HARD_REFRESH_TIMING} Unsaved work in forms in ${env.appName} may be lost.`,
       confirmLabel: 'Reload every tab',
       danger: true,
     });

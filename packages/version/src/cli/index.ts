@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { readFile } from 'node:fs/promises';
 import { parseArgs } from 'node:util';
+import { HARD_REFRESH_TIMING } from '../core/decide.js';
 import { type Bump, isVersion } from '../core/semver.js';
 
 const HELP = `openversion: publish releases and refresh open tabs from CI.
@@ -168,7 +169,7 @@ export async function run(argv: string[], io: Io): Promise<number> {
     }
     if (command === 'refresh') {
       const { epoch } = await call<{ epoch: number }>(ctx, 'POST', '/api/v1/refresh', {});
-      io.out(`Hard refresh sent (epoch ${epoch}). Every open tab reloads within a few minutes.`);
+      io.out(`Hard refresh sent (epoch ${epoch}). ${HARD_REFRESH_TIMING}`);
       return 0;
     }
     if (command !== 'release')

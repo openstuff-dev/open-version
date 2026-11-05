@@ -1,3 +1,4 @@
+import { HARD_REFRESH_TIMING } from '../src/core/decide.js';
 import { describe, expect, it, vi } from 'vitest';
 import { type Io, notesFor, run } from '../src/cli/index.js';
 
@@ -110,6 +111,13 @@ describe('openversion refresh and status', () => {
     expect(await run(['refresh'], t.io)).toBe(0);
     expect(t.sent().url).toBe('https://version.test/api/v1/refresh');
     expect(t.lines[0]).toContain('epoch 4');
+  });
+
+  it('UC-8/S2 says when open tabs reload, as the dashboard does', async () => {
+    const t = io({}, {}, 200, { epoch: 4 });
+    await run(['refresh'], t.io);
+    expect(t.lines[0]).toContain(HARD_REFRESH_TIMING);
+    expect(t.lines[0]).toContain('Background tabs reload when they are shown again');
   });
 
   it('shows the live release', async () => {

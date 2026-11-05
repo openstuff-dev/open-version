@@ -5,6 +5,7 @@ export {
   bump,
   compareVersions,
   decide,
+  HARD_REFRESH_TIMING,
   formatVersion,
   isVersion,
   parseVersion,
