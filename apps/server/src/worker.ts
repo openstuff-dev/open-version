@@ -2,7 +2,7 @@ import type { FastifyBaseLogger } from 'fastify';
 import type { Vault } from './crypto.js';
 import { type Pool, withScope } from './db.js';
 import { PostError, postToOpenAnnounce, type ReleasePost } from './openannounce.js';
-import type { FetchPolicy } from './safe-fetch.js';
+import type { FetchPolicy } from '@openstuff-dev/server';
 
 /** Tries per post before it shows as failed (Retry in the dashboard starts over). */
 export const MAX_ATTEMPTS = 5;

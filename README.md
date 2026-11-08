@@ -141,6 +141,9 @@ couldn't, with **Retry**.
 | `OPENVERSION_SECRET_KEY` | _(made on first start, kept in the database, logged as a warning)_ | Encrypts integration keys at rest (AES-256-GCM). Set it on a server, so a database dump alone can't reveal them. |
 | `OPENVERSION_FETCH` | `public` | `private` lets integrations reach internal addresses, such as an OpenAnnounce on the same network. |
 | `OPENVERSION_FETCH_ALLOW` | _(none)_ | With `private`: the only hosts allowed to be internal, comma-separated. |
+| `OPENVERSION_OPENANNOUNCE_URL` | _(none)_ | Server-wide OpenAnnounce address, e.g. `https://announce.example.com`. With the public key below, it wins over the Integrations tab, which then shows it read-only. |
+| `OPENVERSION_OPENANNOUNCE_PUBLIC_KEY` | _(none)_ | The public key of an OpenAnnounce system (`pk_…`). Safe to share; the web app loads its client with it. |
+| `OPENVERSION_OPENANNOUNCE_SIGNING_SECRET` | _(none)_ | Signs people's OpenAnnounce tokens. Secret: for this server only, never in browser code. Encrypted when saved in the tab. |
 | `OPENVERSION_VERSION_RATE_LIMIT` | `1200` | Version checks per public key and network address per minute; `0` turns it off. |
 | `OPENVERSION_TRUST_PROXY` | _(off)_ | Behind a reverse proxy: `true`, or the proxy's addresses. |
 | `OPENVERSION_DEMO` | `off` | `on` serves the pretend app at `/demo`. |

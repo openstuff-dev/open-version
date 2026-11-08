@@ -1,3 +1,4 @@
+import type { FetchPolicy } from '@openstuff-dev/server';
 /** Settings from environment variables. Each has a default, so the server starts without any. */
 export interface Config {
   port: number;
@@ -24,6 +25,15 @@ export interface Config {
   trustProxy: boolean | string;
   /** Serve the demo host page at /demo. */
   demo: boolean;
+  /**
+   * A server-wide OpenAnnounce connection from the environment. When the URL and public key are
+   * both set, they win over the one saved in the Integrations tab, which then shows read-only.
+   */
+  openAnnounce: {
+    url: string | undefined;
+    publicKey: string | undefined;
+    signingSecret: string | undefined;
+  };
   /**
    * Version checks allowed per public key and address, per minute; 0 turns the limit off.
    * High by default: a whole office (or every user behind a proxy without
@@ -53,6 +63,18 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
       .filter(Boolean),
     trustProxy: trust === 'true' ? true : trust || false,
     demo: env.OPENVERSION_DEMO === 'on',
+    openAnnounce: {
+      url: env.OPENVERSION_OPENANNOUNCE_URL?.replace(/\/$/, '') || undefined,
+      publicKey: env.OPENVERSION_OPENANNOUNCE_PUBLIC_KEY || undefined,
+      signingSecret: env.OPENVERSION_OPENANNOUNCE_SIGNING_SECRET || undefined,
+    },
     versionRateLimit: Number(env.OPENVERSION_VERSION_RATE_LIMIT ?? 1200),
   };
 }
+
+/** The fetch policy integrations use, from OPENVERSION_FETCH and OPENVERSION_FETCH_ALLOW. */
+export const policyFrom = (config: Config): FetchPolicy => ({
+  mode: config.fetch,
+  allow: config.fetchAllow,
+  envPrefix: 'OPENVERSION',
+});

@@ -12,21 +12,22 @@
     "seed:demo": "tsx src/seed-demo.ts"
   },
   "dependencies": {
-    "@fastify/static": "^10.1.7",
-    "fastify": "^5.12.7",
     "@fastify/cookie": "^11.1.5",
+    "@fastify/static": "^10.1.7",
     "@fastify/swagger": "^9.5.2",
+    "@openstuff-dev/server": "^0.1.0",
+    "@openstuff-dev/version": "*",
+    "fastify": "^5.12.7",
     "pg": "^8.23.1",
-    "zod": "^4.6.6",
-    "@openstuff-dev/version": "*"
+    "zod": "^4.6.6"
   },
   "devDependencies": {
+    "@open-version/contracts": "*",
     "@types/node": "^24.0.0",
+    "@types/pg": "^8.23.1",
     "tsx": "^4.23.15",
     "typescript": "~6.0.3",
-    "vitest": "^5.0.1",
-    "@types/pg": "^8.23.1",
-    "@open-version/contracts": "*"
+    "vitest": "^5.0.1"
   },
   "engines": {
     "node": ">=22"
