@@ -20,8 +20,6 @@ import {
   iconChevrons,
   iconDocs,
   iconExternal,
-  iconIntegrations,
-  iconMembers,
   iconMenu,
   iconSettings,
   iconSignOut,
@@ -40,13 +38,6 @@ interface NavLink {
 /** The pages in the sidebar, and who sees each. */
 const LINKS: NavLink[] = [
   { path: 'apps', label: 'Apps', icon: iconApps, roles: ['admin', 'developer', 'viewer'] },
-  {
-    path: 'integrations',
-    label: 'Integrations',
-    icon: iconIntegrations,
-    roles: ['admin', 'developer', 'viewer'],
-  },
-  { path: 'members', label: 'Members', icon: iconMembers, roles: ['admin'] },
 ];
 
 /** Where the Docs link goes: how to add the client and publish from CI. */
@@ -136,7 +127,7 @@ export function initials(name: string): string {
                 }
                 @if (me.isServerAdmin) {
                   <hr os-menu-separator />
-                  <a os-menu-item routerLink="/teams">
+                  <a os-menu-item routerLink="/settings/teams">
                     <svg os-icon [icon]="icons.teams" size="sm"></svg>Manage teams
                   </a>
                 }
@@ -171,7 +162,11 @@ export function initials(name: string): string {
         <div class="rail-foot">
           <ul>
             <li>
-              <a routerLink="/settings" routerLinkActive="active" ariaCurrentWhenActive="page">
+              <a
+                [routerLink]="settingsLink()"
+                routerLinkActive="active"
+                ariaCurrentWhenActive="page"
+              >
                 <svg os-icon [icon]="icons.settings" size="sm"></svg>Settings
               </a>
             </li>
@@ -468,6 +463,12 @@ export class Shell {
     settings: iconSettings,
     signOut: iconSignOut,
   };
+
+  /** Settings inside the team in view, so its tabs show; otherwise the account-level ones. */
+  protected readonly settingsLink = computed(() => {
+    const team = this.session.team();
+    return team ? ['/t', team, 'settings'] : ['/settings'];
+  });
 
   protected readonly links = computed(() => {
     const role = this.session.role();

@@ -25,7 +25,6 @@ import {
   Field,
   Fieldset,
   Radio,
-  Panel,
   SettingCard,
   SettingCardFooter,
   Toaster,
@@ -52,14 +51,13 @@ import { urlProblem } from '../apps';
     Field,
     Fieldset,
     Radio,
-    Panel,
     SettingCard,
     SettingCardFooter,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'stack' },
   template: `
-    <form os-panel title="Environment" [level]="2" (ngSubmit)="save()">
+    <form os-setting-card title="Environment" (ngSubmit)="save()">
       @if (saveError(); as e) {
         <os-callout tone="danger">{{ e }}</os-callout>
       }

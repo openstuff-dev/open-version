@@ -15,13 +15,13 @@ import {
   Cell,
   DataTable,
   EmptyState,
-  PageHeader,
+  SectionHeader,
   Skeleton,
   StatusDot,
 } from '@openstuff-dev/ui-angular';
-import { Api, errorText } from '../core/api';
-import { Crumbs } from '../core/crumbs';
-import { onReturn, slowLoading } from '../core/loading';
+import { Api, errorText } from '../../core/api';
+import { onReturn, slowLoading } from '../../core/loading';
+import { Session } from '../../core/session';
 
 /** Every environment's integrations in one list, with how their posts went. */
 @Component({
@@ -33,7 +33,7 @@ import { onReturn, slowLoading } from '../core/loading';
     Cell,
     DataTable,
     EmptyState,
-    PageHeader,
+    SectionHeader,
     Skeleton,
     StatusDot,
   ],
@@ -41,11 +41,16 @@ import { onReturn, slowLoading } from '../core/loading';
   host: { class: 'stack' },
   template: `
     <header
-      os-page-header
+      os-section-header
       title="Integrations"
       description="Where release notes go. Set one up on an environment’s Integrations tab."
     ></header>
 
+    @if (!session.isAdmin()) {
+      <os-callout tone="info" title="Read only">
+        Only admins change integrations. Ask an admin to set one up or change it.
+      </os-callout>
+    }
     @if (error(); as error) {
       <os-callout tone="danger" title="The integrations didn’t load">{{ error }}</os-callout>
     }
@@ -91,8 +96,12 @@ import { onReturn, slowLoading } from '../core/loading';
         </os-data-table>
       } @else {
         <os-empty-state title="No integrations yet" bordered>
-          Post each release’s notes to OpenAnnounce, so people see what changed. Open an app’s
-          environment and go to its Integrations tab.
+          @if (session.isAdmin()) {
+            Post each release’s notes to OpenAnnounce, so people see what changed. Open an app’s
+            environment and go to its Integrations tab.
+          } @else {
+            Ask an admin to post release notes to OpenAnnounce, so people see what changed.
+          }
         </os-empty-state>
       }
     } @else if (loading.slow()) {
@@ -107,6 +116,7 @@ import { onReturn, slowLoading } from '../core/loading';
 })
 export class Integrations {
   readonly team = input.required<string>();
+  protected readonly session = inject(Session);
   private readonly api = inject(Api);
   protected readonly integrations = signal<Integration[] | null>(null);
   protected readonly error = signal<string | null>(null);
@@ -119,7 +129,6 @@ export class Integrations {
   ];
 
   constructor() {
-    inject(Crumbs).trail.set([{ label: 'Integrations' }]);
     effect(() => {
       void this.load(this.team());
     });
@@ -134,7 +143,9 @@ export class Integrations {
     try {
       show(
         await this.loading.track(
-          this.api.get<Integration[]>(`/api/t/${encodeURIComponent(team)}/integrations`, { onFresh: show }),
+          this.api.get<Integration[]>(`/api/t/${encodeURIComponent(team)}/integrations`, {
+            onFresh: show,
+          }),
         ),
       );
     } catch (error) {

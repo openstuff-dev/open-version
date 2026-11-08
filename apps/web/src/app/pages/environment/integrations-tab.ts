@@ -14,7 +14,7 @@ import {
   Check,
   Control,
   Field,
-  Panel,
+  SettingCard,
   Skeleton,
   Switch,
   Toaster,
@@ -34,7 +34,7 @@ export function parseGroups(text: string): string[] {
 /** Posting release notes to OpenAnnounce as News. */
 @Component({
   selector: 'app-integrations-tab',
-  imports: [FormsModule, Button, Callout, Check, Control, Field, Panel, Skeleton, Switch],
+  imports: [FormsModule, Button, Callout, Check, Control, Field, SettingCard, Skeleton, Switch],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'stack' },
   template: `
@@ -43,12 +43,11 @@ export function parseGroups(text: string): string[] {
     }
     @if (loaded()) {
       <section
-        os-panel
+        os-setting-card
         title="OpenAnnounce"
         description="Each new release’s notes show up in OpenAnnounce as a News message, “{{
           env().appName
         }} 1.4.2”, so people see what changed."
-        [level]="2"
       >
         <label os-check>
           <input
