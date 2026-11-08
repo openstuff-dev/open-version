@@ -57,7 +57,7 @@ export async function buildApp(
 
   app.get('/api/health', { schema: { hide: true } }, async () => {
     await pool.query('SELECT 1');
-    return { status: 'ok' };
+    return { status: 'ok', version: config.appVersion };
   });
   app.get('/api/v1/openapi.json', { schema: { hide: true } }, () => app.swagger());
 

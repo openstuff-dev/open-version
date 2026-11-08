@@ -11,6 +11,7 @@ describe('config', () => {
       databaseUrl: 'postgres://openversion:openversion@localhost:5432/openversion',
       publicUrl: 'http://localhost:8080',
       adminEmail: 'admin@example.com',
+      appVersion: 'unknown',
       adminPassword: undefined,
       sessionDays: 30,
       secretKey: undefined,
@@ -36,5 +37,12 @@ describe('config', () => {
     expect(config.publicUrl).toBe('https://version.example.com');
     expect(config.fetch).toBe('private');
     expect(config.fetchAllow).toEqual(['announce.internal', 'other.internal']);
+  });
+});
+
+describe('version', () => {
+  it('reads the release the image was built from, or unknown for a local build', () => {
+    expect(loadConfig({ VERSION: ' 1.4.0 ' }).appVersion).toBe('1.4.0');
+    expect(loadConfig({}).appVersion).toBe('unknown');
   });
 });
