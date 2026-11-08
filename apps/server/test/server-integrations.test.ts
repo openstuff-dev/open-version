@@ -110,7 +110,7 @@ describe.skipIf(!url)('server-wide OpenAnnounce connection', () => {
     });
   });
 
-  it('refuses people who are not server admins, and anyone signed out', async () => {
+  it('UC-5/S5 refuses people who are not server admins, and anyone signed out', async () => {
     expect((await inject(null, 'GET', '/api/admin/integrations')).statusCode).toBe(401);
     expect((await inject(developer, 'GET', '/api/admin/integrations')).statusCode).toBe(403);
     const put = { url: feedUrl, publicKey: GOOD_KEY };
@@ -122,7 +122,7 @@ describe.skipIf(!url)('server-wide OpenAnnounce connection', () => {
     expect(card).toMatchObject({ status: 'not-connected', url: null, source: null });
   });
 
-  it('connects, tests the feed with this server’s origin, and says it worked', async () => {
+  it('UC-5/S1 connects, and tests the feed with this server’s origin', async () => {
     const response = await inject(root, 'PUT', '/api/admin/integrations/openannounce', {
       url: feedUrl,
       publicKey: GOOD_KEY,
@@ -132,7 +132,7 @@ describe.skipIf(!url)('server-wide OpenAnnounce connection', () => {
     expect(response.json()).toMatchObject({ status: 'connected', source: 'database', hasSigningSecret: true });
   });
 
-  it('keeps the connection and says what to fix when the feed refuses the key', async () => {
+  it('UC-5/S2 keeps the connection and says what to fix when the feed refuses the key', async () => {
     const response = await inject(root, 'PUT', '/api/admin/integrations/openannounce', {
       url: feedUrl,
       publicKey: 'pk_wrong_key_99999',
@@ -141,7 +141,7 @@ describe.skipIf(!url)('server-wide OpenAnnounce connection', () => {
     expect(response.json<{ message: string }>().message).toContain('doesn’t recognise this public key');
   });
 
-  it('names the exact origin to add when OpenAnnounce refuses this server', async () => {
+  it('UC-5/S2 names the exact origin to add when OpenAnnounce refuses this server', async () => {
     await app.close();
     await open({}, 'https://other.example');
     const other = await signIn('root@example.com', 'root-password');
@@ -156,7 +156,7 @@ describe.skipIf(!url)('server-wide OpenAnnounce connection', () => {
     root = await signIn('root@example.com', 'root-password');
   });
 
-  it('never returns the signing secret, and stores it encrypted', async () => {
+  it('UC-5/S5 never returns the signing secret, and stores it encrypted', async () => {
     expect((await inject(root, 'GET', '/api/admin/integrations')).body).not.toContain(SIGNING);
     const { rows } = await pool.query<{ signing_secret_encrypted: string }>(
       "SELECT signing_secret_encrypted FROM server_integrations WHERE kind = 'openannounce'",
@@ -165,7 +165,7 @@ describe.skipIf(!url)('server-wide OpenAnnounce connection', () => {
     expect(rows[0].signing_secret_encrypted).not.toContain(SIGNING);
   });
 
-  it('keeps a team export free of the signing secret', async () => {
+  it('UC-5/S5 keeps a team export free of the signing secret', async () => {
     const { rows } = await pool.query<{ slug: string }>('SELECT slug FROM teams LIMIT 1');
     const response = await inject(root, 'GET', `/api/t/${rows[0].slug}/export`);
     expect(response.statusCode).toBe(200);
@@ -178,7 +178,7 @@ describe.skipIf(!url)('server-wide OpenAnnounce connection', () => {
     expect(response.body).not.toContain(SIGNING);
   });
 
-  it('lets the environment win: the card is read-only and saving is refused', async () => {
+  it('UC-5/S4 lets the environment win: the card is read-only and saving is refused', async () => {
     await app.close();
     await open({
       OPENVERSION_OPENANNOUNCE_URL: 'https://env-announce.example',
@@ -200,7 +200,7 @@ describe.skipIf(!url)('server-wide OpenAnnounce connection', () => {
     root = await signIn('root@example.com', 'root-password');
   });
 
-  it('disconnects, and the client config goes back to nothing', async () => {
+  it('UC-5/S6 disconnects, and the client config goes back to nothing', async () => {
     expect((await inject(root, 'DELETE', '/api/admin/integrations/openannounce')).json()).toEqual({ ok: true });
     expect((await inject(null, 'GET', '/api/client-config')).json()).toEqual({ openannounce: null });
   });
