@@ -2,13 +2,23 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import type { Team } from '@open-version/contracts';
-import { Button, Callout, Cell, Control, DataTable, Field, PageHeader, Skeleton } from '@openstuff-dev/ui-angular';
-import { Api, errorText } from '../core/api';
-import { IdempotencyKey } from '../core/idempotency';
-import { slowLoading } from '../core/loading';
-import { Session } from '../core/session';
-import { exactTime } from '../shared/labels';
-import { Crumbs } from '../core/crumbs';
+import {
+  Button,
+  Callout,
+  Cell,
+  Control,
+  DataTable,
+  Field,
+  SectionHeader,
+  SettingCard,
+  SettingCardFooter,
+  Skeleton,
+} from '@openstuff-dev/ui-angular';
+import { Api, errorText } from '../../core/api';
+import { IdempotencyKey } from '../../core/idempotency';
+import { slowLoading } from '../../core/loading';
+import { Session } from '../../core/session';
+import { exactTime } from '../../shared/labels';
 
 /** For server admins: every team on this server. */
 @Component({
@@ -22,20 +32,30 @@ import { Crumbs } from '../core/crumbs';
     Control,
     DataTable,
     Field,
-    PageHeader,
+    SectionHeader,
+    SettingCard,
+    SettingCardFooter,
     Skeleton,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'stack' },
   template: `
     <header
-      os-page-header
+      os-section-header
       title="Teams"
-      description="Each team has its own apps, releases and members. Add people to a team on its Members page."
+      description="Each team has its own apps, releases and members. Add people to a team on its Members tab."
     ></header>
 
-    <form class="inline" (ngSubmit)="create()">
-      <os-field label="New team" [error]="createError()">
+    <form
+      os-setting-card
+      title="Add a team"
+      description="A team holds its own apps, releases, members and integrations."
+      (ngSubmit)="create()"
+    >
+      @if (createError(); as error) {
+        <os-callout tone="danger">{{ error }}</os-callout>
+      }
+      <os-field label="Team name">
         <input
           os-input
           name="name"
@@ -45,7 +65,9 @@ import { Crumbs } from '../core/crumbs';
           [(ngModel)]="name"
         />
       </os-field>
-      <button os-button variant="primary" type="submit" [loading]="creating()">Add team</button>
+      <div os-setting-card-footer>
+        <button os-button variant="primary" type="submit" [loading]="creating()">Add team</button>
+      </div>
     </form>
 
     @if (error(); as error) {
@@ -72,13 +94,6 @@ import { Crumbs } from '../core/crumbs';
     }
   `,
   styles: `
-    .inline {
-      display: flex;
-      flex-wrap: wrap;
-      gap: var(--os-space-3);
-      align-items: end;
-    }
-
     .nums {
       font-variant-numeric: tabular-nums;
     }
@@ -102,7 +117,6 @@ export class Teams {
   private readonly key = new IdempotencyKey();
 
   constructor() {
-    inject(Crumbs).trail.set([{ label: 'Teams' }]);
     void this.load();
   }
 
@@ -126,7 +140,13 @@ export class Teams {
   private async load(): Promise<void> {
     try {
       this.teams.set(
-        await this.loading.track(this.api.get<Team[]>('/api/teams', { onFresh: (t) => { this.teams.set(t); } })),
+        await this.loading.track(
+          this.api.get<Team[]>('/api/teams', {
+            onFresh: (t) => {
+              this.teams.set(t);
+            },
+          }),
+        ),
       );
     } catch (error) {
       this.error.set(errorText(error));

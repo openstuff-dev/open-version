@@ -11,14 +11,19 @@ const signedIn: CanActivateFn = async (_route, state) => {
   return me ? true : inject(Router).createUrlTree(['/sign-in'], { queryParams: { next: state.url } });
 };
 
-const serverAdmin: CanActivateFn = () =>
-  inject(Session).me()?.isServerAdmin ? true : inject(Router).createUrlTree(['/']);
-
 const page = (path: string, title: string, load: Routes[number]['loadComponent']) => ({
   path,
   loadComponent: load,
   title: `${title} · OpenVersion`,
 });
+
+/** Settings for the team in the URL, or for the account when there isn't one. */
+const settings = () => [
+  { path: 'settings', pathMatch: 'full' as const, redirectTo: 'settings/account' },
+  page('settings/:tab', 'Settings', () =>
+    import('./pages/settings/settings').then((m) => m.SettingsPage),
+  ),
+];
 
 export const routes: Routes = [
   { path: 'sign-in', component: SignIn, title: 'Sign in · OpenVersion' },
@@ -28,11 +33,9 @@ export const routes: Routes = [
     canActivate: [signedIn],
     children: [
       { path: '', component: Start, title: 'OpenVersion' },
-      page('settings', 'Settings', () => import('./pages/settings').then((m) => m.Settings)),
-      {
-        ...page('teams', 'Teams', () => import('./pages/teams').then((m) => m.Teams)),
-        canActivate: [serverAdmin],
-      },
+      ...settings(),
+      // Old addresses: the same tabs, now in Settings.
+      { path: 'teams', pathMatch: 'full', redirectTo: 'settings/teams' },
       {
         path: 't/:team',
         children: [
@@ -41,10 +44,9 @@ export const routes: Routes = [
           page('apps/:app/:env', 'Environment', () =>
             import('./pages/environment/environment').then((m) => m.EnvironmentPage),
           ),
-          page('integrations', 'Integrations', () =>
-            import('./pages/integrations').then((m) => m.Integrations),
-          ),
-          page('members', 'Members', () => import('./pages/members').then((m) => m.Members)),
+          { path: 'integrations', pathMatch: 'full', redirectTo: 'settings/integrations' },
+          { path: 'members', pathMatch: 'full', redirectTo: 'settings/members' },
+          ...settings(),
         ],
       },
     ],

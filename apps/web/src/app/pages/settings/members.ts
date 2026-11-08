@@ -17,17 +17,18 @@ import {
   Control,
   DataTable,
   Field,
-  PageHeader,
+  SecretDialog,
+  SectionHeader,
+  SettingCard,
+  SettingCardFooter,
   Skeleton,
   Toaster,
 } from '@openstuff-dev/ui-angular';
-import { Api, errorText } from '../core/api';
-import { Crumbs } from '../core/crumbs';
-import { IdempotencyKey } from '../core/idempotency';
-import { onReturn, slowLoading } from '../core/loading';
-import { Session } from '../core/session';
-import { CopyButton } from '../shared/copy-button';
-import { ROLE_LABELS } from '../shared/labels';
+import { Api, errorText } from '../../core/api';
+import { IdempotencyKey } from '../../core/idempotency';
+import { onReturn, slowLoading } from '../../core/loading';
+import { Session } from '../../core/session';
+import { ROLE_LABELS } from '../../shared/labels';
 
 const ROLES: Role[] = ['developer', 'viewer', 'admin'];
 
@@ -40,17 +41,18 @@ const ROLES: Role[] = ['developer', 'viewer', 'admin'];
     Callout,
     Cell,
     Control,
-    CopyButton,
     DataTable,
     Field,
-    PageHeader,
+    SectionHeader,
+    SettingCard,
+    SettingCardFooter,
     Skeleton,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'stack' },
   template: `
     <header
-      os-page-header
+      os-section-header
       title="Members"
       description="Developers manage apps, releases, hard refreshes and keys. Viewers only look. Admins also manage members and integrations."
     ></header>
@@ -59,31 +61,31 @@ const ROLES: Role[] = ['developer', 'viewer', 'admin'];
       <os-callout tone="danger" title="The members didn’t load">{{ error }}</os-callout>
     }
 
-    <form class="inline" (ngSubmit)="add()">
-      <os-field label="Email" [error]="addError()">
-        <input os-input type="email" name="email" required [(ngModel)]="email" />
-      </os-field>
-      <os-field label="Name (optional)">
-        <input os-input name="name" [(ngModel)]="name" />
-      </os-field>
-      <os-field label="Role">
-        <select os-select name="role" [(ngModel)]="role">
-          @for (r of roles; track r) {
-            <option [value]="r">{{ roleLabels[r] }}</option>
-          }
-        </select>
-      </os-field>
-      <button os-button type="submit" [loading]="adding()">Add member</button>
+    <form
+      os-setting-card
+      title="Add a member"
+      description="They get a password, shown once, for you to pass on."
+      (ngSubmit)="add()"
+    >
+      <div class="fields">
+        <os-field label="Email" [error]="addError()">
+          <input os-input type="email" name="email" required [(ngModel)]="email" />
+        </os-field>
+        <os-field label="Name (optional)">
+          <input os-input name="name" [(ngModel)]="name" />
+        </os-field>
+        <os-field label="Role">
+          <select os-select name="role" [(ngModel)]="role">
+            @for (r of roles; track r) {
+              <option [value]="r">{{ roleLabels[r] }}</option>
+            }
+          </select>
+        </os-field>
+      </div>
+      <div os-setting-card-footer>
+        <button os-button variant="primary" type="submit" [loading]="adding()">Add member</button>
+      </div>
     </form>
-
-    @if (newPassword(); as added) {
-      <os-callout tone="info" title="Send {{ added.email }} their password">
-        <p>
-          This is the only time it’s shown: <code class="mono">{{ added.password }}</code>
-          <app-copy-button [text]="added.password ?? ''" what="password" />
-        </p>
-      </os-callout>
-    }
 
     @if (members(); as members) {
       <os-data-table
@@ -133,12 +135,21 @@ const ROLES: Role[] = ['developer', 'viewer', 'admin'];
       <os-skeleton [lines]="5" />
     }
   `,
+  styles: `
+    .fields {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--os-space-3);
+      align-items: end;
+    }
+  `,
 })
 export class Members {
   readonly team = input.required<string>();
   private readonly api = inject(Api);
   private readonly toaster = inject(Toaster);
   private readonly confirm = inject(ConfirmDialog);
+  private readonly secret = inject(SecretDialog);
   private readonly session = inject(Session);
   protected readonly me = () => this.session.me()?.id;
   protected readonly members = signal<Member[] | null>(null);
@@ -159,11 +170,9 @@ export class Members {
   protected role: Role = 'developer';
   protected readonly adding = signal(false);
   protected readonly addError = signal<string | null>(null);
-  protected readonly newPassword = signal<NewMember | null>(null);
   private readonly key = new IdempotencyKey();
 
   constructor() {
-    inject(Crumbs).trail.set([{ label: 'Members' }]);
     effect(() => {
       void this.load(this.team());
     });
@@ -177,7 +186,6 @@ export class Members {
   protected async add(): Promise<void> {
     this.adding.set(true);
     this.addError.set(null);
-    this.newPassword.set(null);
     try {
       const body = { email: this.email, name: this.name, role: this.role };
       const added = await this.api.post<NewMember>(`${this.base}/members`, body, this.key.value);
@@ -185,8 +193,14 @@ export class Members {
       this.email = '';
       this.name = '';
       this.members.update((m) => (m ? [...m, added] : m));
-      if (added.password) this.newPassword.set(added);
-      else {
+      if (added.password) {
+        await this.secret.show({
+          title: `Password for ${added.email}`,
+          secret: added.password,
+          what: 'password',
+          instructions: 'Give it to them. They can change it under Settings › Account.',
+        });
+      } else {
         this.toaster.show(`Added ${added.email}. They sign in with the password they have.`, {
           tone: 'success',
         });
