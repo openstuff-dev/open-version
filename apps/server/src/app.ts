@@ -10,10 +10,11 @@ import { loadVault, type Vault } from './crypto.js';
 import type { Pool } from './db.js';
 import { registerErrorHandler } from './errors.js';
 import { testOpenAnnounce } from './openannounce.js';
-import { policyFrom } from './safe-fetch.js';
+import { policyFrom } from './config.js';
 import { registerIdempotency } from './idempotency.js';
 import { registerAppRoutes } from './routes/apps.js';
 import { registerDemo } from './routes/demo.js';
+import { registerServerIntegrationRoutes } from './routes/server-integrations.js';
 import { registerIntegrationRoutes, type TestConnection } from './routes/integrations.js';
 import { registerReleaseRoutes } from './routes/releases.js';
 import { registerTeamRoutes } from './routes/teams.js';
@@ -75,6 +76,7 @@ export async function buildApp(
     getVault,
     options.testConnection ?? ((url, key) => testOpenAnnounce(policyFrom(config), url, key)),
   );
+  registerServerIntegrationRoutes(app, pool, config, getVault);
   registerTransferRoutes(app, pool);
   registerV1Routes(app, pool, config);
   // The built @openstuff-dev/version, so an app can load it from here instead of npm:

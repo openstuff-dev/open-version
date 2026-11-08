@@ -17,7 +17,7 @@ import type { AddressInfo } from 'node:net';
 import { buildApp } from '../src/app.js';
 import { hashPassword } from '../src/auth.js';
 import { loadConfig } from '../src/config.js';
-import { vaultFor } from '../src/crypto.js';
+import { vaultFor } from '@openstuff-dev/server';
 import { postToOpenAnnounce } from '../src/openannounce.js';
 import { MAX_ATTEMPTS, sendOutbox } from '../src/worker.js';
 import { createPool, migrate, type Pool, withScope } from '../src/db.js';

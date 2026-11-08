@@ -18,6 +18,7 @@ describe('config', () => {
       fetchAllow: [],
       trustProxy: false,
       demo: false,
+      openAnnounce: { url: undefined, publicKey: undefined, signingSecret: undefined },
       versionRateLimit: 1200,
     });
   });

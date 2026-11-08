@@ -4,7 +4,7 @@ import { ensureFirstAdmin } from './bootstrap.js';
 import { loadConfig } from './config.js';
 import { loadVault, type Vault } from './crypto.js';
 import { createPool, migrate } from './db.js';
-import { policyFrom } from './safe-fetch.js';
+import { policyFrom } from './config.js';
 import { startWorker } from './worker.js';
 
 const config = loadConfig();

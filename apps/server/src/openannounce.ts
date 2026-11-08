@@ -1,4 +1,4 @@
-import { type FetchPolicy, FetchRefused, safeFetch, type SafeResponse } from './safe-fetch.js';
+import { type FetchPolicy, FetchRefused, safeFetch, type SafeResponse } from '@openstuff-dev/server';
 
 /** A failure worth trying again (network, 5xx, 429) or not (a refused key, a bad group). */
 export class PostError extends Error {
@@ -102,4 +102,45 @@ export async function postToOpenAnnounce(
     response.status === 401 ? 'OpenAnnounce refused the publish key.' : `OpenAnnounce said: ${reason}`,
     retry,
   );
+}
+
+/**
+ * Checks a public key and origin against OpenAnnounce's feed, without changing anything. The
+ * feed answers 401 for an unknown key and 403 for an origin the system doesn't allow, so the
+ * answer says what to change.
+ */
+export async function checkOpenAnnounceFeed(
+  policy: FetchPolicy,
+  url: string,
+  publicKey: string,
+  origin: string,
+): Promise<string> {
+  let response: SafeResponse;
+  try {
+    response = await safeFetch(`${url.replace(/\/$/, '')}/api/v1/feed`, policy, {
+      headers: {
+        'x-openannounce-key': publicKey,
+        origin,
+        accept: 'application/json',
+        'user-agent': 'OpenVersion',
+      },
+    });
+  } catch (err) {
+    if (err instanceof FetchRefused) throw new PostError(err.message, false);
+    throw new PostError('That address didn’t answer. Check the URL and that OpenAnnounce is running.', true);
+  }
+  if (response.status === 200) return 'Connected to OpenAnnounce.';
+  if (response.status === 401) {
+    throw new PostError(`OpenAnnounce doesn’t recognise this public key: ${serverSays(response)}`, false);
+  }
+  if (response.status === 403) {
+    throw new PostError(
+      `Add ${origin} to allowed origins in OpenAnnounce, on the system’s page, then test again.`,
+      false,
+    );
+  }
+  if (response.status === 404) {
+    throw new PostError(`${url} doesn’t look like an OpenAnnounce with the feed API. Check the URL.`, false);
+  }
+  throw new PostError(`OpenAnnounce said: ${serverSays(response)}`, response.status >= 500);
 }
