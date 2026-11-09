@@ -4,7 +4,8 @@ import fastifySwagger from '@fastify/swagger';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import Fastify, { type FastifyInstance } from 'fastify';
-import { registerAuth } from './auth.js';
+import { registerIntegrationRoutes as registerServerConnectionRoutes } from '@openstuff-dev/server';
+import { registerAuth, requireAccount } from './auth.js';
 import type { Config } from './config.js';
 import { loadVault, type Vault } from './crypto.js';
 import type { Pool } from './db.js';
@@ -14,7 +15,7 @@ import { policyFrom } from './config.js';
 import { registerIdempotency } from './idempotency.js';
 import { registerAppRoutes } from './routes/apps.js';
 import { registerDemo } from './routes/demo.js';
-import { registerServerIntegrationRoutes } from './routes/server-integrations.js';
+import { integrationOffers } from './integrations.js';
 import { registerIntegrationRoutes, type TestConnection } from './routes/integrations.js';
 import { registerReleaseRoutes } from './routes/releases.js';
 import { registerTeamRoutes } from './routes/teams.js';
@@ -76,7 +77,16 @@ export async function buildApp(
     getVault,
     options.testConnection ?? ((url, key) => testOpenAnnounce(policyFrom(config), url, key)),
   );
-  registerServerIntegrationRoutes(app, pool, config, getVault);
+  // Server-wide connections from the shared package, the same routes every OpenStuff app has.
+  registerServerConnectionRoutes(app, {
+    db: pool,
+    vault: getVault,
+    policy: policyFrom(config),
+    origin: new URL(config.publicUrl).origin,
+    appName: 'OpenVersion',
+    offers: integrationOffers(config),
+    isServerAdmin: (request) => requireAccount(request).isServerAdmin,
+  });
   registerTransferRoutes(app, pool);
   registerV1Routes(app, pool, config);
   // The built @openstuff-dev/version, so an app can load it from here instead of npm:
