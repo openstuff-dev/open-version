@@ -16,6 +16,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@openstuff-dev/server": "^0.7.0",
     "@openstuff-dev/version": "*"
   },
   "devDependencies": {

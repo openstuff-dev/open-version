@@ -7,8 +7,8 @@ import {
   type OnInit,
   signal,
 } from '@angular/core';
-import type { Environment } from '@open-version/contracts';
-import { Callout, SegmentedControl } from '@openstuff-dev/ui-angular';
+import { connectionFor, type Environment } from '@open-version/contracts';
+import { SecretDialog, SegmentedControl } from '@openstuff-dev/ui-angular';
 import { FreshTokens } from '../../core/fresh-tokens';
 import { CopyButton } from '../../shared/copy-button';
 
@@ -42,23 +42,10 @@ configure({
 /** How to add OpenVersion to the app and publish from CI, with this environment's values. */
 @Component({
   selector: 'app-setup-tab',
-  imports: [Callout, CopyButton, SegmentedControl],
+  imports: [CopyButton, SegmentedControl],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'stack' },
   template: `
-    @if (token(); as token) {
-      <os-callout tone="warning" title="Copy the deploy token now, it won’t be shown again">
-        <p>
-          CI uses it to publish releases. Save it as the secret
-          <code class="mono">OPENVERSION_TOKEN</code>.
-        </p>
-        <div class="code-block">
-          <pre><code>{{ token }}</code></pre>
-          <app-copy-button [text]="token" what="deploy token" />
-        </div>
-      </os-callout>
-    }
-
     <p class="lead">
       Add the client to {{ env().appName }}, give the build its version, and publish a release after
       each deploy. The values below are this environment’s.
@@ -145,10 +132,18 @@ export class SetupTab implements OnInit {
     return this.snippets().install[view === 'ci' ? 'npm' : view];
   });
 
-  /** The deploy token, if it was made a moment ago (a new app). Shown this once. */
-  protected readonly token = signal<string | null>(null);
+  private readonly secret = inject(SecretDialog);
 
+  /** A deploy token made a moment ago (a new app), shown once with its connection string. */
   ngOnInit(): void {
-    this.token.set(this.fresh.take(this.env().id));
+    const token = this.fresh.take(this.env().id);
+    if (!token) return;
+    void this.secret.show({
+      title: 'Your new deploy token',
+      secret: token,
+      what: 'deploy token',
+      instructions: 'CI uses it to publish releases. Save it as the secret OPENVERSION_TOKEN.',
+      connection: connectionFor(this.env(), token, globalThis.location.origin),
+    });
   }
 }

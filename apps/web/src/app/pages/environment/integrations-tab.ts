@@ -7,7 +7,7 @@ import {
   signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import type { Environment, Integration } from '@open-version/contracts';
+import { type Environment, type Integration, readPublishKeyPaste } from '@open-version/contracts';
 import {
   Button,
   Callout,
@@ -80,10 +80,13 @@ export function parseGroups(text: string): string[] {
             </os-field>
             <os-field
               label="Publish key"
+              [error]="keyError()"
               [hint]="
-                integration()?.hasKey
-                  ? 'A key is saved. Leave this empty to keep it.'
-                  : 'From the system’s Setup tab in OpenAnnounce, starts with ak_.'
+                keyFilled()
+                  ? 'Filled in the address and the key from the connection string.'
+                  : integration()?.hasKey
+                    ? 'A key is saved. Leave this empty to keep it.'
+                    : 'From the system’s Setup tab in OpenAnnounce: the key (ak_…) or the connection string shown with it.'
               "
             >
               <input
@@ -94,7 +97,8 @@ export function parseGroups(text: string): string[] {
                 class="mono"
                 [required]="!integration()?.hasKey"
                 [disabled]="!session.isAdmin()"
-                [(ngModel)]="publishKey"
+                [ngModel]="publishKey"
+                (ngModelChange)="keyChanged($event)"
               />
             </os-field>
             <os-field
@@ -161,6 +165,8 @@ export class IntegrationsTab {
   protected readonly testing = signal(false);
   protected readonly formError = signal<string | null>(null);
   protected readonly testResult = signal<{ ok: boolean; text: string } | null>(null);
+  protected readonly keyError = signal<string | null>(null);
+  protected readonly keyFilled = signal(false);
   protected url = '';
   protected publishKey = '';
   protected groups = '';
@@ -181,6 +187,21 @@ export class IntegrationsTab {
     this.url = found?.url ?? '';
     this.groups = found?.groups.join(', ') ?? '';
     this.publishKey = '';
+    this.keyError.set(null);
+    this.keyFilled.set(false);
+  }
+
+  /** A pasted OpenAnnounce connection string fills in the address and the key. */
+  protected keyChanged(text: string): void {
+    const paste = readPublishKeyPaste(text);
+    this.keyError.set(paste.kind === 'error' ? paste.message : null);
+    this.keyFilled.set(paste.kind === 'connection');
+    if (paste.kind === 'connection') {
+      this.url = paste.url;
+      this.publishKey = paste.publishKey;
+    } else {
+      this.publishKey = text;
+    }
   }
 
   /** Switching off saves at once; switching on shows the form (saved with Save). */
