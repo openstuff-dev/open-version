@@ -379,8 +379,10 @@ describe.skipIf(!url)('API against Postgres', () => {
   });
 
   describe('integrations', () => {
-    it('stores the publish key encrypted and never sends it back', async () => {
+    it('UC-5/S7 adds release notes for a picked environment, admins only, and lists it for the team', async () => {
       const env = await environment(admin, 'shop', 'production');
+      const body = { url: 'https://announce.example.com', publishKey: 'ak_good_key' };
+      expect((await inject(developer, 'POST', `/api/t/demo/environments/${env.id}/integrations`, body)).statusCode).toBe(403);
       const created = await inject(admin, 'POST', `/api/t/demo/environments/${env.id}/integrations`, {
         url: 'https://announce.example.com',
         publishKey: 'ak_good_key',
@@ -399,9 +401,11 @@ describe.skipIf(!url)('API against Postgres', () => {
       expect(wrong.statusCode).toBe(400);
       expect(wrong.json<{ error: string }>().error).toContain('refused the key');
       expect((await inject(developer, 'POST', `/api/t/demo/integrations/${integration.id}/test`)).statusCode).toBe(403);
+      const list = (await inject(developer, 'GET', '/api/t/demo/integrations')).json<{ id: string; environmentName: string }[]>();
+      expect(list).toContainEqual(expect.objectContaining({ id: integration.id, environmentName: 'production' }));
     });
 
-    it('queues the notes of every new release in the same transaction', async () => {
+    it('UC-5/S7 queues the notes of every new release in the same transaction', async () => {
       const published = await ci(shop.deployToken, 'POST', '/api/v1/releases', { bump: 'patch', notes: 'Fixes' });
       expect(published.statusCode).toBe(201);
       const env = await environment(admin, 'shop', 'production');

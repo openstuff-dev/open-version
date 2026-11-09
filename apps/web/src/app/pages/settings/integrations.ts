@@ -8,20 +8,32 @@ import {
   input,
   signal,
 } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import type { Integration, Role } from '@open-version/contracts';
+import type { AppSummary, Integration, Role } from '@open-version/contracts';
 import { allAnnounceGroups } from '@openstuff-dev/ui';
 import {
   Badge,
+  Button,
   Callout,
   Cell,
+  Control,
   DataTable,
+  Dialog,
+  DialogBody,
+  DialogClose,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
   EmptyState,
+  Field,
   SectionHeader,
   Skeleton,
   StatusDot,
+  Toaster,
 } from '@openstuff-dev/ui-angular';
 import { Api, errorText } from '../../core/api';
+import { parseGroups } from '../environment/integrations-tab';
 import { onReturn, slowLoading } from '../../core/loading';
 import { Session } from '../../core/session';
 import { ServerConnections } from './server-connections';
@@ -30,12 +42,22 @@ import { ServerConnections } from './server-connections';
 @Component({
   selector: 'app-integrations',
   imports: [
+    FormsModule,
     RouterLink,
     Badge,
+    Button,
     Callout,
     Cell,
+    Control,
     DataTable,
+    Dialog,
+    DialogBody,
+    DialogClose,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
     EmptyState,
+    Field,
     SectionHeader,
     ServerConnections,
     Skeleton,
@@ -55,13 +77,15 @@ import { ServerConnections } from './server-connections';
     }
 
     @if (team()) {
-      <hgroup class="team-head">
-        <h2>Release notes</h2>
-        <p>
-          Each environment can post its release notes to OpenAnnounce. Set it up on the
-          environment’s Integrations tab.
-        </p>
-      </hgroup>
+      <div class="team-head">
+        <hgroup>
+          <h2>Release notes</h2>
+          <p>Post each release’s notes to OpenAnnounce, so people see what changed.</p>
+        </hgroup>
+        @if (session.isAdmin() && integrations()?.length && free().length) {
+          <button type="button" os-button (click)="openAdd()">Add</button>
+        }
+      </div>
       @if (!session.isAdmin()) {
         <os-callout tone="info" title="Read only">
           Only admins change integrations. Ask an admin to set one up or change it.
@@ -112,11 +136,18 @@ import { ServerConnections } from './server-connections';
           </os-data-table>
         } @else {
           <os-empty-state title="No integrations yet" bordered>
-            @if (session.isAdmin()) {
-              Post each release’s notes to OpenAnnounce, so people see what changed. Open an app’s
-              environment and go to its Integrations tab.
-            } @else {
+            @if (!session.isAdmin()) {
               Ask an admin to post release notes to OpenAnnounce, so people see what changed.
+            } @else if (apps()?.length === 0) {
+              Add an app first.
+              <div os-actions>
+                <a os-button variant="primary" [routerLink]="['/t', team(), 'apps']">Apps</a>
+              </div>
+            } @else {
+              Post each release’s notes to OpenAnnounce, so people see what changed.
+              <div os-actions>
+                <button type="button" os-button variant="primary" (click)="openAdd()">Add</button>
+              </div>
             }
           </os-empty-state>
         }
@@ -124,9 +155,80 @@ import { ServerConnections } from './server-connections';
         <os-skeleton [lines]="4" />
       }
     }
+
+    <dialog os-dialog [(open)]="addOpen">
+      <header os-dialog-header><h2 os-dialog-title>Post release notes</h2></header>
+      <form id="add-integration" os-dialog-body class="stack" (ngSubmit)="add()">
+        @if (addError(); as error) {
+          <os-callout tone="danger">{{ error }}</os-callout>
+        }
+        <os-field label="Environment" hint="Its new releases post their notes as News.">
+          <select os-select name="environment" required [(ngModel)]="environmentId">
+            @for (app of free(); track app.id) {
+              <optgroup [label]="app.name">
+                @for (env of app.environments; track env.id) {
+                  <option [value]="env.id">{{ app.name }} {{ env.name }}</option>
+                }
+              </optgroup>
+            }
+          </select>
+        </os-field>
+        <os-field label="OpenAnnounce URL" hint="Where your OpenAnnounce runs.">
+          <input
+            os-input
+            name="url"
+            type="url"
+            inputmode="url"
+            required
+            placeholder="https://announce.example.com"
+            [(ngModel)]="url"
+          />
+        </os-field>
+        <os-field
+          label="Publish key"
+          hint="From the system’s Setup tab in OpenAnnounce, starts with ak_."
+        >
+          <input
+            os-input
+            name="publishKey"
+            type="password"
+            autocomplete="off"
+            class="mono"
+            required
+            [(ngModel)]="publishKey"
+          />
+        </os-field>
+        <os-field
+          label="Groups (optional)"
+          hint="Slugs, comma-separated, like shop, staff. Empty: everyone."
+        >
+          <input os-input name="groups" [(ngModel)]="groupsText" />
+        </os-field>
+      </form>
+      <footer os-dialog-footer>
+        <button os-button os-dialog-close type="button">Cancel</button>
+        <button
+          os-button
+          variant="primary"
+          type="submit"
+          form="add-integration"
+          [loading]="adding()"
+        >
+          Add
+        </button>
+      </footer>
+    </dialog>
   `,
   styles: `
     .team-head {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--os-space-3);
+      align-items: end;
+      justify-content: space-between;
+    }
+
+    hgroup {
       display: grid;
       gap: var(--os-space-1);
       margin: 0;
@@ -159,6 +261,8 @@ export class Integrations {
   );
 
   private readonly api = inject(Api);
+  private readonly toaster = inject(Toaster);
+  protected readonly apps = signal<AppSummary[] | null>(null);
   protected readonly integrations = signal<Integration[] | null>(null);
   protected readonly error = signal<string | null>(null);
   protected readonly loading = slowLoading();
@@ -168,6 +272,22 @@ export class Integrations {
     { key: 'enabled' as const, label: 'Status' },
     { key: 'sent' as const, label: 'Posted', align: 'end' as const },
   ];
+
+  /** Apps with the environments that don't post release notes yet. */
+  protected readonly free = computed(() => {
+    const taken = new Set((this.integrations() ?? []).map((i) => i.environmentId));
+    return (this.apps() ?? [])
+      .map((app) => ({ ...app, environments: app.environments.filter((e) => !taken.has(e.id)) }))
+      .filter((app) => app.environments.length);
+  });
+
+  protected readonly addOpen = signal(false);
+  protected readonly adding = signal(false);
+  protected readonly addError = signal<string | null>(null);
+  protected environmentId = '';
+  protected url = '';
+  protected publishKey = '';
+  protected groupsText = '';
 
   constructor() {
     effect(() => {
@@ -180,7 +300,53 @@ export class Integrations {
     );
   }
 
+  /** Starts with the first free environment and the OpenAnnounce address already in use. */
+  protected async openAdd(): Promise<void> {
+    this.environmentId = this.free().at(0)?.environments.at(0)?.id ?? '';
+    this.url = this.integrations()?.at(0)?.url ?? '';
+    this.publishKey = '';
+    this.groupsText = '';
+    this.addError.set(null);
+    this.addOpen.set(true);
+    if (!this.url) {
+      try {
+        const config = await this.api.get<{ openannounce: { url: string } | null }>('/api/client-config');
+        this.url ||= config.openannounce?.url ?? '';
+      } catch {
+        // The address is typed in instead.
+      }
+    }
+  }
+
+  protected async add(): Promise<void> {
+    const team = this.team();
+    this.adding.set(true);
+    this.addError.set(null);
+    try {
+      const added = await this.api.post<Integration>(
+        `/api/t/${encodeURIComponent(team)}/environments/${this.environmentId}/integrations`,
+        {
+          kind: 'open-announce',
+          url: this.url,
+          publishKey: this.publishKey,
+          groups: parseGroups(this.groupsText),
+          enabled: true,
+        },
+      );
+      this.integrations.update((list) => [...(list ?? []), added]);
+      this.addOpen.set(false);
+      this.toaster.show(`${added.appName} ${added.environmentName} posts its release notes now`, {
+        tone: 'success',
+      });
+    } catch (error) {
+      this.addError.set(errorText(error));
+    } finally {
+      this.adding.set(false);
+    }
+  }
+
   private async load(team: string): Promise<void> {
+    void this.loadApps(team);
     this.error.set(null);
     const show = (list: Integration[]) => {
       if (team === this.team()) this.integrations.set(list);
@@ -195,6 +361,15 @@ export class Integrations {
       );
     } catch (error) {
       this.error.set(errorText(error));
+    }
+  }
+
+  private async loadApps(team: string): Promise<void> {
+    try {
+      const apps = await this.api.get<AppSummary[]>(`/api/t/${encodeURIComponent(team)}/apps`);
+      if (team === this.team()) this.apps.set(apps);
+    } catch {
+      // Without the apps the Add button stays hidden; the table still shows.
     }
   }
 }
