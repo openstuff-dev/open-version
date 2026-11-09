@@ -87,7 +87,7 @@ const GROUP_ORDER: readonly SettingsGroupKey[] = ['you', 'team', 'server'];
             <app-members [team]="team()" />
           }
           @case ('integrations') {
-            <app-integrations [team]="team()" />
+            <app-integrations [team]="team()" [serverAdmin]="who().isServerAdmin" />
           }
           @case ('data') {
             <app-data [team]="team()" />
