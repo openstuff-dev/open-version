@@ -93,7 +93,7 @@ const GROUP_ORDER: readonly SettingsGroupKey[] = ['you', 'team', 'server'];
             <app-data [team]="team()" />
           }
           @case ('teams') {
-            <app-teams />
+            <app-teams [team]="team()" />
           }
         }
       }
