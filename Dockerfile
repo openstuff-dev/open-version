@@ -17,7 +17,10 @@ RUN npm run build -w packages/version && npm run build -w packages/contracts
 FROM packages AS web
 RUN npm ci -w apps/web -w packages/version -w packages/contracts
 COPY apps/web/ apps/web/
-RUN npm run tokens -w apps/web && npm run build -w apps/web
+# The release this image is built from. The web app shows it; a local build keeps 'unknown'.
+ARG VERSION=unknown
+RUN printf "/** The release this build came from. Docker sets it from the tag; a local build keeps 'unknown'. */\nexport const APP_VERSION = '%s';\n" "$VERSION" > apps/web/src/app/build-version.ts \
+    && npm run tokens -w apps/web && npm run build -w apps/web
 
 FROM packages AS server
 RUN npm ci -w apps/server -w packages/version -w packages/contracts
@@ -28,9 +31,11 @@ FROM manifests AS server-deps
 RUN npm ci -w apps/server --omit=dev && mkdir -p apps/server/node_modules
 
 FROM node:24-alpine
+ARG VERSION=unknown
 ENV NODE_ENV=production \
     PORT=8080 \
-    WEB_DIR=/app/web
+    WEB_DIR=/app/web \
+    VERSION=${VERSION}
 WORKDIR /app/apps/server
 COPY --from=server-deps /app/node_modules /app/node_modules
 # Anything npm had to nest under the server instead of hoisting (usually empty).
