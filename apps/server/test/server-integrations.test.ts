@@ -201,7 +201,7 @@ describe.skipIf(!url)('server-wide OpenAnnounce connection', () => {
     root = await signIn('root@example.com', 'root-password');
   });
 
-  it('UC-6/S1 S2 S7 signs an opaque id and the groups for the team, never a name or email', async () => {
+  it('UC-6/S1 UC-6/S2 UC-6/S7 signs an opaque id and the groups for the team, never a name or email', async () => {
     const put = { url: feedUrl, publicKey: GOOD_KEY, signingSecret: SIGNING };
     expect((await inject(root, 'PUT', '/api/admin/integrations/openannounce', put)).statusCode).toBe(200);
     const { rows } = await pool.query<{ slug: string }>(
