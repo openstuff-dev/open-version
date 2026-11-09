@@ -9,16 +9,16 @@ import {
   signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import type { Environment, EnvironmentWithToken } from '@open-version/contracts';
+import { connectionFor, type Environment, type EnvironmentWithToken } from '@open-version/contracts';
 import {
   Button,
-  Callout,
   ConfirmDialog,
   Control,
   Field,
   Icon,
   IconButton,
   Panel,
+  SecretDialog,
   Toaster,
 } from '@openstuff-dev/ui-angular';
 import { Api, errorText } from '../../core/api';
@@ -37,13 +37,14 @@ export function toOrigin(text: string): string | null {
   }
 }
 
+const NEW_TOKEN = 'CI uses it to publish releases. Save it as the secret OPENVERSION_TOKEN.';
+
 /** The public key, the deploy token (shown once) and the allowed origins. */
 @Component({
   selector: 'app-keys-tab',
   imports: [
     FormsModule,
     Button,
-    Callout,
     Control,
     CopyButton,
     Field,
@@ -72,26 +73,36 @@ export function toOrigin(text: string): string | null {
       description="For CI: publishes releases and sends hard refreshes. Keep it in a CI secret, never in browser code."
       [level]="2"
     >
-      @if (token(); as token) {
-        <os-callout tone="warning" title="Copy it now, it won’t be shown again">
-          <div class="key">
-            <code class="mono">{{ token }}</code>
-            <app-copy-button [text]="token" what="deploy token" />
-          </div>
-        </os-callout>
-      } @else {
-        <div class="key">
-          <code class="mono" aria-label="Deploy token ending in {{ last4() }}">{{
-            env().tokenHint
-          }}</code>
-        </div>
-      }
+      <div class="key">
+        <code class="mono" aria-label="Deploy token ending in {{ last4() }}">{{
+          env().tokenHint
+        }}</code>
+      </div>
       @if (session.canWrite()) {
-        <div>
-          <button type="button" os-button (click)="regenerate()" [loading]="regenerating()">
+        <div class="inline">
+          <button
+            type="button"
+            os-button
+            (click)="replace('regenerate')"
+            [loading]="regenerating() === 'regenerate'"
+            [disabled]="regenerating() === 'connect'"
+          >
             Regenerate
           </button>
+          <button
+            type="button"
+            os-button
+            (click)="replace('connect')"
+            [loading]="regenerating() === 'connect'"
+            [disabled]="regenerating() === 'regenerate'"
+          >
+            Get a connection string
+          </button>
         </div>
+        <p class="muted">
+          A connection string connects another OpenStuff app to this environment, from its Settings
+          › Integrations.
+        </p>
       }
     </section>
 
@@ -102,6 +113,10 @@ export function toOrigin(text: string): string | null {
       [level]="2"
     >
       @if (origins().length) {
+        <p class="muted">
+          An app you connect with a connection string must be in this list too, or it can’t check
+          its version.
+        </p>
         <ul class="origins">
           @for (o of origins(); track o) {
             <li>
@@ -141,6 +156,12 @@ export function toOrigin(text: string): string | null {
     </section>
   `,
   styles: `
+    .inline {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--os-space-2);
+    }
+
     .key {
       display: flex;
       flex-wrap: wrap;
@@ -181,8 +202,8 @@ export class KeysTab implements OnInit {
   private readonly toaster = inject(Toaster);
   private readonly confirm = inject(ConfirmDialog);
   private readonly fresh = inject(FreshTokens);
-  protected readonly token = signal<string | null>(null);
-  protected readonly regenerating = signal(false);
+  private readonly secret = inject(SecretDialog);
+  protected readonly regenerating = signal<'regenerate' | 'connect' | null>(null);
   protected readonly origins = signal<string[]>([]);
   protected readonly saving = signal(false);
   protected readonly originError = signal<string | null>(null);
@@ -197,34 +218,69 @@ export class KeysTab implements OnInit {
   }
 
   ngOnInit(): void {
-    this.token.set(this.fresh.take(this.env().id));
+    const token = this.fresh.take(this.env().id);
+    if (token) void this.showToken(token, 'Your new deploy token', NEW_TOKEN);
   }
 
   private get path(): string {
     return `/api/t/${encodeURIComponent(this.team())}/environments/${this.env().id}`;
   }
 
-  protected async regenerate(): Promise<void> {
-    const ok = await this.confirm.confirm({
-      title: 'Regenerate the deploy token?',
-      message:
-        'The current token stops working at once. CI jobs that use it fail until you put the new one in their secret.',
-      confirmLabel: 'Regenerate token',
-      danger: true,
-    });
+  /**
+   * Replaces the deploy token and shows the new one with its connection string. Only a hash of the
+   * old token is stored, so a connection string always needs a new token.
+   */
+  protected async replace(why: 'regenerate' | 'connect'): Promise<void> {
+    const ok = await this.confirm.confirm(
+      why === 'regenerate'
+        ? {
+            title: 'Regenerate the deploy token?',
+            message:
+              'The current token stops working at once. CI jobs that use it fail until you put the new one in their secret.',
+            confirmLabel: 'Regenerate token',
+            danger: true,
+          }
+        : {
+            title: 'Replace the deploy token to get a connection string?',
+            message:
+              'OpenVersion keeps only a hash of the deploy token, so a connection string needs a new one. The current token stops working at once: CI needs the new token in its secret, or its releases fail.',
+            confirmLabel: 'Replace token',
+            danger: true,
+          },
+    );
     if (!ok) return;
-    this.regenerating.set(true);
+    this.regenerating.set(why);
     try {
       const result = await this.api.post<EnvironmentWithToken>(`${this.path}/token`);
       const { deployToken, ...rest } = result;
-      this.token.set(deployToken);
       this.changed.emit(rest);
       this.toaster.show('Old token revoked. New token generated.', { tone: 'success' });
+      await this.showToken(
+        deployToken,
+        why === 'regenerate' ? 'Your new deploy token' : 'Your connection string',
+        'The old token stopped working. Put this one in CI as the secret OPENVERSION_TOKEN.',
+        rest,
+      );
     } catch (error) {
       this.toaster.show(errorText(error), { tone: 'danger' });
     } finally {
-      this.regenerating.set(false);
+      this.regenerating.set(null);
     }
+  }
+
+  private showToken(
+    token: string,
+    title: string,
+    instructions: string,
+    env: Environment = this.env(),
+  ): Promise<void> {
+    return this.secret.show({
+      title,
+      secret: token,
+      what: 'deploy token',
+      instructions,
+      connection: connectionFor(env, token, globalThis.location.origin),
+    });
   }
 
   protected async addOrigin(): Promise<void> {

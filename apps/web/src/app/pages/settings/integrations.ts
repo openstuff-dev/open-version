@@ -10,7 +10,7 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import type { AppSummary, Integration, Role } from '@open-version/contracts';
+import { type AppSummary, type Integration, readPublishKeyPaste, type Role } from '@open-version/contracts';
 import { allAnnounceGroups } from '@openstuff-dev/ui';
 import {
   Badge,
@@ -186,7 +186,12 @@ import { ServerConnections } from './server-connections';
         </os-field>
         <os-field
           label="Publish key"
-          hint="From the system’s Setup tab in OpenAnnounce, starts with ak_."
+          [error]="keyError()"
+          [hint]="
+            keyFilled()
+              ? 'Filled in the address and the key from the connection string.'
+              : 'From the Systems page in OpenAnnounce: the publish key (ak_…) or the connection string shown with it.'
+          "
         >
           <input
             os-input
@@ -195,7 +200,8 @@ import { ServerConnections } from './server-connections';
             autocomplete="off"
             class="mono"
             required
-            [(ngModel)]="publishKey"
+            [ngModel]="publishKey"
+            (ngModelChange)="keyChanged($event)"
           />
         </os-field>
         <os-field
@@ -284,6 +290,8 @@ export class Integrations {
   protected readonly addOpen = signal(false);
   protected readonly adding = signal(false);
   protected readonly addError = signal<string | null>(null);
+  protected readonly keyError = signal<string | null>(null);
+  protected readonly keyFilled = signal(false);
   protected environmentId = '';
   protected url = '';
   protected publishKey = '';
@@ -305,6 +313,8 @@ export class Integrations {
     this.environmentId = this.free().at(0)?.environments.at(0)?.id ?? '';
     this.url = this.integrations()?.at(0)?.url ?? '';
     this.publishKey = '';
+    this.keyError.set(null);
+    this.keyFilled.set(false);
     this.groupsText = '';
     this.addError.set(null);
     this.addOpen.set(true);
@@ -315,6 +325,19 @@ export class Integrations {
       } catch {
         // The address is typed in instead.
       }
+    }
+  }
+
+  /** A pasted OpenAnnounce connection string fills in the address and the key. */
+  protected keyChanged(text: string): void {
+    const paste = readPublishKeyPaste(text);
+    this.keyError.set(paste.kind === 'error' ? paste.message : null);
+    this.keyFilled.set(paste.kind === 'connection');
+    if (paste.kind === 'connection') {
+      this.url = paste.url;
+      this.publishKey = paste.publishKey;
+    } else {
+      this.publishKey = text;
     }
   }
 

@@ -196,3 +196,5 @@ export interface PublishedRelease {
   app: string;
   environment: string;
 }
+
+export { connectionFor, readPublishKeyPaste, type Connection, type PublishKeyPaste } from './connection-string.js';
