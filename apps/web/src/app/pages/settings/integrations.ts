@@ -136,17 +136,22 @@ import { ServerConnections } from './server-connections';
           </os-data-table>
         } @else {
           <os-empty-state title="No integrations yet" bordered>
-            @if (!session.isAdmin()) {
-              Ask an admin to post release notes to OpenAnnounce, so people see what changed.
-            } @else if (apps()?.length === 0) {
-              Add an app first.
+            <p>
+              @if (!session.isAdmin()) {
+                Ask an admin to post release notes to OpenAnnounce, so people see what changed.
+              } @else if (apps()?.length === 0) {
+                Add an app first.
+              } @else {
+                Post each release’s notes to OpenAnnounce, so people see what changed.
+              }
+            </p>
+            @if (session.isAdmin()) {
               <div os-actions>
-                <a os-button variant="primary" [routerLink]="['/t', team(), 'apps']">Apps</a>
-              </div>
-            } @else {
-              Post each release’s notes to OpenAnnounce, so people see what changed.
-              <div os-actions>
-                <button type="button" os-button variant="primary" (click)="openAdd()">Add</button>
+                @if (apps()?.length === 0) {
+                  <a os-button variant="primary" [routerLink]="['/t', team(), 'apps']">Apps</a>
+                } @else {
+                  <button type="button" os-button variant="primary" (click)="openAdd()">Add</button>
+                }
               </div>
             }
           </os-empty-state>

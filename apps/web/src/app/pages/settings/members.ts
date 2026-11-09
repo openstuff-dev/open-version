@@ -2,10 +2,13 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
+  type ElementRef,
+  computed,
   effect,
   inject,
   input,
   signal,
+  viewChild,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import type { Member, NewMember, Role } from '@open-version/contracts';
@@ -16,6 +19,7 @@ import {
   ConfirmDialog,
   Control,
   DataTable,
+  EmptyState,
   Field,
   SecretDialog,
   SectionHeader,
@@ -42,6 +46,7 @@ const ROLES: Role[] = ['developer', 'viewer', 'admin'];
     Cell,
     Control,
     DataTable,
+    EmptyState,
     Field,
     SectionHeader,
     SettingCard,
@@ -69,7 +74,7 @@ const ROLES: Role[] = ['developer', 'viewer', 'admin'];
     >
       <div class="fields">
         <os-field label="Email" [error]="addError()">
-          <input os-input type="email" name="email" required [(ngModel)]="email" />
+          <input #emailInput os-input type="email" name="email" required [(ngModel)]="email" />
         </os-field>
         <os-field label="Name (optional)">
           <input os-input name="name" [(ngModel)]="name" />
@@ -88,6 +93,12 @@ const ROLES: Role[] = ['developer', 'viewer', 'admin'];
     </form>
 
     @if (members(); as members) {
+      @if (onlyYou()) {
+        <os-empty-state title="Only you so far">
+          <p>Add the developers who ship your apps. They get a password to sign in with.</p>
+          <div><button os-button type="button" (click)="focusEmail()">Add member</button></div>
+        </os-empty-state>
+      }
       <os-data-table
         caption="Members"
         [columns]="columns"
@@ -152,6 +163,18 @@ export class Members {
   private readonly secret = inject(SecretDialog);
   private readonly session = inject(Session);
   protected readonly me = () => this.session.me()?.id;
+  private readonly emailInput = viewChild<ElementRef<HTMLInputElement>>('emailInput');
+
+  /** True when you're the only member, so the empty state invites the first one. */
+  protected readonly onlyYou = computed(() => {
+    const list = this.members();
+    return list?.every((m) => m.accountId === this.me()) ?? false;
+  });
+
+  protected focusEmail(): void {
+    this.emailInput()?.nativeElement.focus();
+  }
+
   protected readonly members = signal<Member[] | null>(null);
   protected readonly error = signal<string | null>(null);
   protected readonly loading = slowLoading();
