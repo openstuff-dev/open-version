@@ -44,9 +44,6 @@
             "@openstuff-dev/lint"
           ]
         }
-      ],
-      "dependsOn": [
-        "^build"
       ]
     },
     "stylelint": {
