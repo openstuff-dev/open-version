@@ -1,5 +1,12 @@
 import { ChangeDetectionStrategy, Component, inject, input, signal } from '@angular/core';
-import { Button, Callout, FileInput, SectionHeader, SettingCard } from '@openstuff-dev/ui-angular';
+import {
+  Button,
+  Callout,
+  FileInput,
+  SectionHeader,
+  SettingCard,
+  SettingCardBody,
+} from '@openstuff-dev/ui-angular';
 import { Api, errorText } from '../../core/api';
 
 interface ImportResult {
@@ -12,7 +19,7 @@ interface ImportResult {
 /** The team's apps, environments and releases as one JSON file, and back again. */
 @Component({
   selector: 'app-data',
-  imports: [Button, Callout, FileInput, SectionHeader, SettingCard],
+  imports: [Button, Callout, FileInput, SectionHeader, SettingCard, SettingCardBody],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'stack' },
   template: `
@@ -27,7 +34,9 @@ interface ImportResult {
       title="Export"
       description="One JSON file with this team’s apps, environments, release history and integrations. Public keys, deploy tokens and integration keys aren’t in it: imported environments get new ones."
     >
-      <div><a os-button variant="primary" [href]="exportUrl()" download>Download export</a></div>
+      <div os-setting-card-body>
+        <div><a os-button variant="primary" [href]="exportUrl()" download>Download export</a></div>
+      </div>
     </section>
 
     <section
@@ -35,23 +44,25 @@ interface ImportResult {
       title="Import"
       description="Adds what’s in an export file to this team. Apps and environments with the same names are updated; releases already here are skipped."
     >
-      <input
-        type="file"
-        os-file-input
-        accept="application/json,.json"
-        aria-label="Export file"
-        [disabled]="importing()"
-        (change)="pick($event)"
-      />
-      @if (imported(); as r) {
-        <os-callout tone="success" title="Imported">
-          {{ r.apps }} apps, {{ r.environments }} environments and {{ r.releases }} releases.
-          {{ r.note }}
-        </os-callout>
-      }
-      @if (importError(); as error) {
-        <os-callout tone="danger" title="Nothing was imported">{{ error }}</os-callout>
-      }
+      <div os-setting-card-body>
+        <input
+          type="file"
+          os-file-input
+          accept="application/json,.json"
+          aria-label="Export file"
+          [disabled]="importing()"
+          (change)="pick($event)"
+        />
+        @if (imported(); as r) {
+          <os-callout tone="success" title="Imported">
+            {{ r.apps }} apps, {{ r.environments }} environments and {{ r.releases }} releases.
+            {{ r.note }}
+          </os-callout>
+        }
+        @if (importError(); as error) {
+          <os-callout tone="danger" title="Nothing was imported">{{ error }}</os-callout>
+        }
+      </div>
     </section>
   `,
 })

@@ -12,13 +12,14 @@ import {
   Field,
   SectionHeader,
   SettingCard,
+  SettingCardBody,
   SettingCardFooter,
   Skeleton,
+  slowLoading,
   Toaster,
 } from '@openstuff-dev/ui-angular';
 import { Api, errorText } from '../../core/api';
 import { IdempotencyKey } from '../../core/idempotency';
-import { slowLoading } from '../../core/loading';
 import { Session } from '../../core/session';
 import { exactTime } from '../../shared/labels';
 
@@ -36,6 +37,7 @@ import { exactTime } from '../../shared/labels';
     Field,
     SectionHeader,
     SettingCard,
+    SettingCardBody,
     SettingCardFooter,
     Skeleton,
   ],
@@ -54,19 +56,21 @@ import { exactTime } from '../../shared/labels';
       description="A team holds its own apps, releases, members and integrations."
       (ngSubmit)="create()"
     >
-      @if (createError(); as error) {
-        <os-callout tone="danger">{{ error }}</os-callout>
-      }
-      <os-field label="Team name">
-        <input
-          os-input
-          name="name"
-          required
-          maxlength="120"
-          placeholder="Web team"
-          [(ngModel)]="name"
-        />
-      </os-field>
+      <div os-setting-card-body>
+        @if (createError(); as error) {
+          <os-callout tone="danger">{{ error }}</os-callout>
+        }
+        <os-field label="Team name">
+          <input
+            os-input
+            name="name"
+            required
+            maxlength="120"
+            placeholder="Web team"
+            [(ngModel)]="name"
+          />
+        </os-field>
+      </div>
       <div os-setting-card-footer>
         <button os-button variant="primary" type="submit" [loading]="creating()">Add team</button>
       </div>

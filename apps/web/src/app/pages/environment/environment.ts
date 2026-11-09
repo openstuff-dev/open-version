@@ -9,10 +9,17 @@ import {
 } from '@angular/core';
 import { Router } from '@angular/router';
 import type { Environment } from '@open-version/contracts';
-import { Badge, Callout, Skeleton, Tab, Tabs } from '@openstuff-dev/ui-angular';
+import {
+  Badge,
+  Callout,
+  onReturn,
+  Skeleton,
+  slowLoading,
+  Tab,
+  Tabs,
+} from '@openstuff-dev/ui-angular';
 import { Api, errorText } from '../../core/api';
 import { Crumbs } from '../../core/crumbs';
-import { onReturn, slowLoading } from '../../core/loading';
 import { LiveVersion } from '../../shared/live-version';
 import { IntegrationsTab } from './integrations-tab';
 import { KeysTab } from './keys-tab';
