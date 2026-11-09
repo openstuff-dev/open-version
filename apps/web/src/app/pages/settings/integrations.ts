@@ -27,14 +27,15 @@ import {
   DialogTitle,
   EmptyState,
   Field,
+  onReturn,
   SectionHeader,
   Skeleton,
+  slowLoading,
   StatusDot,
   Toaster,
 } from '@openstuff-dev/ui-angular';
 import { Api, errorText } from '../../core/api';
 import { parseGroups } from '../environment/integrations-tab';
-import { onReturn, slowLoading } from '../../core/loading';
 import { Session } from '../../core/session';
 import { ServerConnections } from './server-connections';
 

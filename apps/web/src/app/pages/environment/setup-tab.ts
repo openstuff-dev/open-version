@@ -8,9 +8,12 @@ import {
   signal,
 } from '@angular/core';
 import { connectionFor, type Environment } from '@open-version/contracts';
-import { SecretDialog, SegmentedControl } from '@openstuff-dev/ui-angular';
+import {
+  CodeBlock,
+  SecretDialog,
+  SegmentedControl,
+} from '@openstuff-dev/ui-angular';
 import { FreshTokens } from '../../core/fresh-tokens';
-import { CopyButton } from '../../shared/copy-button';
 
 /** Where people and apps reach this server: the page's own origin. */
 const serverUrl = () => globalThis.location.origin;
@@ -42,7 +45,10 @@ configure({
 /** How to add OpenVersion to the app and publish from CI, with this environment's values. */
 @Component({
   selector: 'app-setup-tab',
-  imports: [CopyButton, SegmentedControl],
+  imports: [
+    SegmentedControl,
+    CodeBlock,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'stack' },
   template: `
@@ -65,34 +71,19 @@ configure({
             Publish after each deploy. The CLI reads <code class="mono">OPENVERSION_URL</code> and
             <code class="mono">OPENVERSION_TOKEN</code> (the deploy token, from the Keys tab).
           </p>
-          <div class="code-block">
-            <pre><code>{{ snippets().cli }}</code></pre>
-            <app-copy-button [text]="snippets().cli" what="command" />
-          </div>
+          <os-code-block [code]="snippets().cli" what="command" />
           <h3>GitHub Actions</h3>
-          <div class="code-block">
-            <pre><code>{{ snippets().ci }}</code></pre>
-            <app-copy-button [text]="snippets().ci" what="workflow step" />
-          </div>
+          <os-code-block [code]="snippets().ci" what="workflow step" />
         </div>
       }
       @default {
         <div class="stack">
           <h3>1. Install</h3>
-          <div class="code-block">
-            <pre><code>{{ install() }}</code></pre>
-            <app-copy-button [text]="install()" what="install command" />
-          </div>
+          <os-code-block [code]="install()" what="install command" />
           <h3>2. Configure it once, early</h3>
-          <div class="code-block">
-            <pre><code>{{ snippets().configure }}</code></pre>
-            <app-copy-button [text]="snippets().configure" what="configure code" />
-          </div>
+          <os-code-block [code]="snippets().configure" what="configure code" />
           <h3>3. Show the update toast</h3>
-          <div class="code-block">
-            <pre><code>{{ snippets().page }}</code></pre>
-            <app-copy-button [text]="snippets().page" what="element" />
-          </div>
+          <os-code-block [code]="snippets().page" what="element" />
         </div>
       }
     }

@@ -7,6 +7,7 @@ import {
   Field,
   SectionHeader,
   SettingCard,
+  SettingCardBody,
   SettingCardFooter,
   Toaster,
 } from '@openstuff-dev/ui-angular';
@@ -24,6 +25,7 @@ import { Session } from '../../core/session';
     Field,
     SectionHeader,
     SettingCard,
+    SettingCardBody,
     SettingCardFooter,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -36,12 +38,14 @@ import { Session } from '../../core/session';
     ></header>
 
     <form os-setting-card title="Team name" (ngSubmit)="rename()">
-      @if (error(); as error) {
-        <os-callout tone="danger">{{ error }}</os-callout>
-      }
-      <os-field label="Team name">
-        <input os-input name="teamName" required maxlength="120" [(ngModel)]="teamName" />
-      </os-field>
+      <div os-setting-card-body>
+        @if (error(); as error) {
+          <os-callout tone="danger">{{ error }}</os-callout>
+        }
+        <os-field label="Team name">
+          <input os-input name="teamName" required maxlength="120" [(ngModel)]="teamName" />
+        </os-field>
+      </div>
       <div os-setting-card-footer>
         <button os-button variant="primary" type="submit" [loading]="renaming()">Rename</button>
       </div>

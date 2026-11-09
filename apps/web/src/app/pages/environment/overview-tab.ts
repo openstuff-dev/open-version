@@ -34,11 +34,11 @@ import {
   Field,
   Icon,
   Skeleton,
+  slowLoading,
   Toaster,
 } from '@openstuff-dev/ui-angular';
 import { Api, errorText } from '../../core/api';
 import { IdempotencyKey } from '../../core/idempotency';
-import { slowLoading } from '../../core/loading';
 import { Session } from '../../core/session';
 import { iconRefresh } from '../../shared/icons';
 import { notesPreview, SOURCE_LABELS } from '../../shared/labels';

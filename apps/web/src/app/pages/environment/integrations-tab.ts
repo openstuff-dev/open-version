@@ -16,11 +16,11 @@ import {
   Field,
   SettingCard,
   Skeleton,
+  slowLoading,
   Switch,
   Toaster,
 } from '@openstuff-dev/ui-angular';
 import { Api, errorText } from '../../core/api';
-import { slowLoading } from '../../core/loading';
 import { Session } from '../../core/session';
 
 /** "shop, all-staff" → ["shop", "all-staff"]. */

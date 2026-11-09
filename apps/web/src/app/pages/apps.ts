@@ -30,15 +30,16 @@ import {
   Field,
   Fieldset,
   Icon,
+  onReturn,
   PageHeader,
   Skeleton,
+  slowLoading,
   Toaster,
 } from '@openstuff-dev/ui-angular';
 import { Api, errorText } from '../core/api';
 import { Crumbs } from '../core/crumbs';
 import { FreshTokens } from '../core/fresh-tokens';
 import { IdempotencyKey } from '../core/idempotency';
-import { onReturn, slowLoading } from '../core/loading';
 import { Session } from '../core/session';
 import { iconPlus } from '../shared/icons';
 import { LiveVersion } from '../shared/live-version';
