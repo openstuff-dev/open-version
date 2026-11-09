@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  computed,
   DestroyRef,
   effect,
   inject,
@@ -8,7 +9,8 @@ import {
   signal,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import type { Integration } from '@open-version/contracts';
+import type { Integration, Role } from '@open-version/contracts';
+import { allAnnounceGroups } from '@openstuff-dev/ui';
 import {
   Badge,
   Callout,
@@ -49,7 +51,7 @@ import { ServerConnections } from './server-connections';
     ></header>
 
     @if (serverAdmin()) {
-      <app-server-connections />
+      <app-server-connections tenant="team" [announceGroups]="groups()" />
     }
 
     @if (team()) {
@@ -150,6 +152,12 @@ export class Integrations {
   readonly team = input('');
   readonly serverAdmin = input(false);
   protected readonly session = inject(Session);
+
+  /** Every team a server admin can see, with every role: the OpenAnnounce groups to create. */
+  protected readonly groups = computed(() =>
+    allAnnounceGroups(this.session.me()?.teams.map((team) => team.slug) ?? [], ROLES),
+  );
+
   private readonly api = inject(Api);
   protected readonly integrations = signal<Integration[] | null>(null);
   protected readonly error = signal<string | null>(null);
@@ -190,3 +198,5 @@ export class Integrations {
     }
   }
 }
+
+const ROLES: readonly Role[] = ['admin', 'developer', 'viewer'];

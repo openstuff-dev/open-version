@@ -4,8 +4,12 @@ import fastifySwagger from '@fastify/swagger';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import Fastify, { type FastifyInstance } from 'fastify';
-import { registerIntegrationRoutes as registerServerConnectionRoutes } from '@openstuff-dev/server';
-import { registerAuth, requireAccount } from './auth.js';
+import type { Role } from '@open-version/contracts';
+import {
+  announceGroups,
+  registerIntegrationRoutes as registerServerConnectionRoutes,
+} from '@openstuff-dev/server';
+import { bearer, registerAuth, requireAccount, teamAccess } from './auth.js';
 import type { Config } from './config.js';
 import { loadVault, type Vault } from './crypto.js';
 import type { Pool } from './db.js';
@@ -28,6 +32,9 @@ export interface AppOptions {
   /** The vault for integration keys; made from the config on first use when left out. */
   vault?: () => Promise<Vault>;
 }
+
+/** Every role: anyone in a team may read their own OpenAnnounce token. */
+const ALL_ROLES: readonly Role[] = ['admin', 'developer', 'viewer'];
 
 export async function buildApp(
   config: Config,
@@ -86,6 +93,15 @@ export async function buildApp(
     appName: 'OpenVersion',
     offers: integrationOffers(config),
     isServerAdmin: (request) => requireAccount(request).isServerAdmin,
+    // OpenAnnounce sees the account's id and the groups for the team in `?team=`, never a name
+    // or an email. Someone not in that team gets 404 from teamAccess.
+    announceUser: async (request) => {
+      if (!request.account || bearer(request)) return null;
+      const { team } = request.query as { team?: unknown };
+      if (typeof team !== 'string' || !team) return { sub: request.account.id, groups: [] };
+      const access = await teamAccess(pool, request, team, ALL_ROLES);
+      return { sub: request.account.id, groups: announceGroups(team, access.role) };
+    },
   });
   registerTransferRoutes(app, pool);
   registerV1Routes(app, pool, config);
