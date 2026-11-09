@@ -86,7 +86,7 @@ export function parseGroups(text: string): string[] {
                   ? 'Filled in the address and the key from the connection string.'
                   : integration()?.hasKey
                     ? 'A key is saved. Leave this empty to keep it.'
-                    : 'From the system’s Setup tab in OpenAnnounce: the key (ak_…) or the connection string shown with it.'
+                    : 'From the Systems page in OpenAnnounce: the publish key (ak_…) or the connection string shown with it.'
               "
             >
               <input

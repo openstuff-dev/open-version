@@ -190,7 +190,7 @@ import { ServerConnections } from './server-connections';
           [hint]="
             keyFilled()
               ? 'Filled in the address and the key from the connection string.'
-              : 'From the system’s Setup tab in OpenAnnounce: the key (ak_…) or the connection string shown with it.'
+              : 'From the Systems page in OpenAnnounce: the publish key (ak_…) or the connection string shown with it.'
           "
         >
           <input

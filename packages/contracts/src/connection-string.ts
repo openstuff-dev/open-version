@@ -51,7 +51,7 @@ export function readPublishKeyPaste(text: string): PublishKeyPaste {
       return {
         kind: 'error',
         message:
-          'That connection string has no publish key. In OpenAnnounce, make a publish key on the system’s Setup tab and copy the string shown with it.',
+          'That connection string has no publish key. In OpenAnnounce, make a publish key on the Systems page and copy the string shown with it.',
       };
     }
     return { kind: 'connection', url, publishKey };
