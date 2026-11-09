@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import type { FastifyInstance } from 'fastify';
 import pg from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { verifyUser } from '@openstuff-dev/announce/server';
 import { buildApp } from '../src/app.js';
 import { hashPassword } from '../src/auth.js';
 import { loadConfig } from '../src/config.js';
@@ -200,8 +201,32 @@ describe.skipIf(!url)('server-wide OpenAnnounce connection', () => {
     root = await signIn('root@example.com', 'root-password');
   });
 
+  it('UC-6/S1 S2 S7 signs an opaque id and the groups for the team, never a name or email', async () => {
+    const put = { url: feedUrl, publicKey: GOOD_KEY, signingSecret: SIGNING };
+    expect((await inject(root, 'PUT', '/api/admin/integrations/openannounce', put)).statusCode).toBe(200);
+    const { rows } = await pool.query<{ slug: string }>(
+      `SELECT t.slug FROM teams t JOIN members m ON m.team_id = t.id
+         JOIN accounts a ON a.id = m.account_id WHERE a.email = $1 LIMIT 1`,
+      [DEMO_DEVELOPER.email],
+    );
+    const team = rows[0].slug;
+    const response = await inject(developer, 'GET', `/api/openannounce-token?team=${team}`);
+    expect(response.statusCode).toBe(200);
+    const verified = await verifyUser(SIGNING, response.body);
+    if (!verified.ok) throw new Error(verified.error);
+    expect(verified.claims.groups).toEqual([`t-${team}`, 'role-developer', `t-${team}-role-developer`]);
+    expect(JSON.stringify(verified.claims)).not.toContain(DEMO_DEVELOPER.email);
+    expect(JSON.stringify(verified.claims)).not.toContain(DEMO_DEVELOPER.name);
+    expect((await inject(developer, 'GET', '/api/openannounce-token?team=nowhere')).statusCode).toBe(404);
+    expect((await inject(null, 'GET', '/api/openannounce-token')).statusCode).toBe(401);
+  });
+
   it('UC-5/S6 disconnects, and the client config goes back to nothing', async () => {
     expect((await inject(root, 'DELETE', '/api/admin/integrations/openannounce')).json()).toEqual({ ok: true });
     expect((await inject(null, 'GET', '/api/client-config')).json()).toEqual({ openannounce: null });
+  });
+
+  it('UC-5/S6 gives no OpenAnnounce token once the connection is removed', async () => {
+    expect((await inject(developer, 'GET', '/api/openannounce-token')).statusCode).toBe(204);
   });
 });
